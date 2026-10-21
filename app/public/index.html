@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="pairing-token" content="__PAIRING_TOKEN__">
+  <title>ZIVAR Download Manager</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230f766e'/%3E%3Cpath d='M20 9v17m-7-7 7 7 7-7M12 31h16' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <!-- ZIVAR's own icon set. Toolbar glyphs sit on coloured tiles; file icons are coloured sheets. -->
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-add" viewBox="0 0 24 24"><path d="M8.6 12.4l3.8-3.8"/><path d="M10.2 6.2l1-1a3.1 3.1 0 014.4 4.4l-1 1"/><path d="M10.8 12.8l-1 1a3.1 3.1 0 01-4.4-4.4l1-1"/><path d="M17.5 13.5v7M14 17h7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.5 5.8v12.4L18.6 12z" class="solid"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.6" y="5.6" width="3.9" height="12.8" rx="1.1" class="solid"/><rect x="13.5" y="5.6" width="3.9" height="12.8" rx="1.1" class="solid"/></symbol>
+    <symbol id="i-pause-all" viewBox="0 0 24 24"><rect x="4" y="8.5" width="11" height="11" rx="2.2" class="solid"/><path d="M8.5 5h8.3a2.2 2.2 0 012.2 2.2v8.3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7.2h14"/><path d="M9.6 7V5h4.8v2"/><path d="M7 7.3l.8 11a1.6 1.6 0 001.6 1.5h5.2a1.6 1.6 0 001.6-1.5l.8-11"/><path d="M10.4 10.6v5.8M13.6 10.6v5.8"/></symbol>
+    <symbol id="i-broom" viewBox="0 0 24 24"><path d="M19.6 4.4l-6.4 6.4"/><path d="M13.6 10.4l-3.2-1.1c-1.4 0-4.2 1.6-6 4.6l5.7 5.7c3-1.8 4.6-4.6 4.6-6z"/><path d="M7.3 16.7l-1.6 1.6"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4.5 6.5h8M17.5 6.5h2M4.5 12h2M11 12h8.5M4.5 17.5h6M15 17.5h4.5"/><circle cx="15" cy="6.5" r="2.1"/><circle cx="8.6" cy="12" r="2.1"/><circle cx="12.7" cy="17.5" r="2.1"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M4 9.8h16M8.5 3.6v3.6M15.5 3.6v3.6"/><path d="M12 12.6v3.1l2.1 1.2"/></symbol>
+    <symbol id="i-net" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.8"/><path d="M4.2 11h13.6M11 4.2c1.9 1.9 2.8 4.2 2.8 6.8s-.9 4.9-2.8 6.8c-1.9-1.9-2.8-4.2-2.8-6.8s.9-4.9 2.8-6.8z"/><path d="M19.2 14.5v6.3M16.8 18.4l2.4 2.4 2.4-2.4"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.4a2 2 0 012-2h3.9l2 2.1h7.1a2 2 0 012 2v7.6a2 2 0 01-2 2h-13a2 2 0 01-2-2z"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M10 6V4.8a2 2 0 014 0V6h3.4a1 1 0 011 1v3.3h-1.2a2 2 0 000 4h1.2v3.4a1 1 0 01-1 1H14v-1.2a2 2 0 00-4 0v1.2H6.6a1 1 0 01-1-1v-3.4h1.2a2 2 0 000-4H5.6V7a1 1 0 011-1z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-stack" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8.3 12.2l2.5 2.5 5-5"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 4h10M7 20h10M8 4c0 4 8 5 8 8s-8 4-8 8M16 4c0 4-8 5-8 8s8 4 8 8"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19 4.5V9h-4.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.5l7 2.8v5.2c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V6.3z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.4"/></symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24"><path d="M5 7h10M5 12h10M5 17h6"/><path d="M16.5 14.5l3 2.5-3 2.5z" class="solid"/></symbol>
+    <symbol id="f-sheet" viewBox="0 0 24 24"><path class="sheet" d="M5.5 2.5h8.6l4.4 4.4v14.6h-13z"/><path class="fold" d="M14.1 2.5v4.4h4.4"/></symbol>
+    <symbol id="g-video" viewBox="0 0 24 24"><path class="glyph-solid" d="M10 11.2v6.2l5.1-3.1z"/></symbol>
+    <symbol id="g-audio" viewBox="0 0 24 24"><path class="glyph" d="M11 17.2v-6.4l4.3-1.2v5.9"/><circle class="glyph-solid" cx="9.9" cy="17.2" r="1.5"/><circle class="glyph-solid" cx="14.2" cy="15.6" r="1.5"/></symbol>
+    <symbol id="g-image" viewBox="0 0 24 24"><path class="glyph" d="M8.2 17.6l2.8-3.6 2 2.3 1.4-1.6 1.6 2.9z"/><circle class="glyph-solid" cx="10" cy="11.4" r="1.2"/></symbol>
+    <symbol id="g-document" viewBox="0 0 24 24"><path class="glyph" d="M8.4 11h7.2M8.4 13.8h7.2M8.4 16.6h4.6"/></symbol>
+    <symbol id="g-archive" viewBox="0 0 24 24"><path class="glyph" d="M12 9.2v1.4M12 12v1.4"/><rect class="glyph" x="10.5" y="14.6" width="3" height="3.2" rx=".6"/></symbol>
+    <symbol id="g-program" viewBox="0 0 24 24"><rect class="glyph" x="8" y="10.6" width="8" height="7" rx="1"/><path class="glyph" d="M8 12.6h8"/></symbol>
+    <symbol id="g-other" viewBox="0 0 24 24"><circle class="glyph-solid" cx="9.4" cy="14.6" r="1"/><circle class="glyph-solid" cx="12" cy="14.6" r="1"/><circle class="glyph-solid" cx="14.6" cy="14.6" r="1"/></symbol>
+  </svg>
+
+  <div class="app">
+    <nav class="menubar" aria-label="Menu utama">
+      <div class="menu"><button class="menu-trigger" id="menu-tasks" aria-haspopup="true" aria-expanded="false">Tugas</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="add">Tambah URL…<kbd>Ins</kbd></button>
+          <button role="menuitem" data-command="grabber">Site Grabber…</button>
+          <hr><button role="menuitem" id="quit-app" data-command="quit" hidden>Keluar aplikasi</button>
+          <span class="menu-note" id="quit-note">Tutup tab browser untuk keluar.</span>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false">File</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="open-file">Buka file<kbd>Enter</kbd></button>
+          <button role="menuitem" data-command="show-file">Tampilkan di folder</button>
+          <button role="menuitem" data-command="folder">Buka folder unduhan</button>
+          <hr><button role="menuitem" data-command="copy-url">Salin alamat unduhan</button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false">Unduhan</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="resume">Lanjutkan</button>
+          <button role="menuitem" data-command="pause">Jeda</button>
+          <button role="menuitem" data-command="cancel">Batalkan</button>
+          <button role="menuitem" data-command="remove">Hapus dari daftar<kbd>Del</kbd></button>
+          <button role="menuitem" data-command="refresh-address">Perbarui alamat unduhan…</button>
+          <button role="menuitem" data-command="checksum">Verifikasi checksum…</button>
+          <hr><button role="menuitem" data-command="move-top">Pindahkan ke awal antrean</button>
+          <button role="menuitem" data-command="move-up">Naikkan di antrean<kbd>Ctrl+↑</kbd></button>
+          <button role="menuitem" data-command="move-down">Turunkan di antrean<kbd>Ctrl+↓</kbd></button>
+          <hr><button role="menuitem" data-command="resume-all">Lanjutkan semua</button>
+          <button role="menuitem" data-command="pause-all">Jeda semua</button>
+          <button role="menuitem" data-command="remove-completed">Hapus semua yang selesai</button>
+          <hr><span class="menu-label">Setelah semua selesai</span>
+          <button role="menuitemradio" data-after="none" aria-checked="true">Tidak melakukan apa-apa</button>
+          <button role="menuitemradio" data-after="quit" aria-checked="false">Tutup ZIVAR</button>
+          <button role="menuitemradio" data-after="sleep" aria-checked="false" class="desktop-only">Sleep komputer</button>
+          <button role="menuitemradio" data-after="shutdown" aria-checked="false" class="desktop-only">Matikan komputer</button>
+          <hr><button role="menuitem" data-command="scheduler">Penjadwal…</button>
+          <button role="menuitem" data-command="settings">Pengaturan…</button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false">Tampilan</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="theme" id="theme-item">Tema terang</button>
+          <button role="menuitem" data-command="sidebar" id="sidebar-item">Sembunyikan kategori</button>
+          <button role="menuitem" data-command="select-all">Pilih semua<kbd>Ctrl+A</kbd></button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false">Bantuan</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="setup">Panduan ekstensi Chrome</button>
+          <button role="menuitem" data-command="check-update" class="desktop-only" id="check-update-item">Periksa pembaruan…</button>
+          <button role="menuitem" data-command="about">Tentang ZIVAR</button>
+        </div></div>
+    </nav>
+
+    <div class="toolbar" role="toolbar" aria-label="Perintah unduhan">
+      <button class="tool" id="tb-add" data-command="add"><span class="tile teal"><svg><use href="#i-add"/></svg></span><span>Tambah URL</span></button>
+      <button class="tool" id="tb-resume" data-command="resume"><span class="tile green"><svg><use href="#i-play"/></svg></span><span>Lanjut</span></button>
+      <button class="tool" id="tb-pause" data-command="pause"><span class="tile amber"><svg><use href="#i-pause"/></svg></span><span>Jeda</span></button>
+      <button class="tool" id="tb-pause-all" data-command="pause-all"><span class="tile orange"><svg><use href="#i-pause-all"/></svg></span><span>Jeda Semua</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="tb-delete" data-command="remove"><span class="tile red"><svg><use href="#i-trash"/></svg></span><span>Hapus</span></button>
+      <button class="tool" id="tb-delete-done" data-command="remove-completed"><span class="tile rose"><svg><use href="#i-broom"/></svg></span><span>Hapus Selesai</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="show-settings" data-command="settings"><span class="tile indigo"><svg><use href="#i-sliders"/></svg></span><span>Pengaturan</span></button>
+      <button class="tool" id="show-scheduler" data-command="scheduler"><span class="tile violet"><svg><use href="#i-calendar"/></svg></span><span>Penjadwal</span></button>
+      <button class="tool" id="show-grabber" data-command="grabber"><span class="tile cyan"><svg><use href="#i-net"/></svg></span><span>Site Grabber</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="open-folder" data-command="folder"><span class="tile gold"><svg><use href="#i-folder"/></svg></span><span>Folder</span></button>
+      <button class="tool" id="show-setup" data-command="setup"><span class="tile blue"><svg><use href="#i-puzzle"/></svg></span><span>Panduan Chrome</span></button>
+      <label class="search"><svg><use href="#i-search"/></svg><input id="search" type="search" placeholder="Cari nama file atau situs…" aria-label="Cari unduhan" autocomplete="off"></label>
+    </div>
+
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Kategori">
+        <div class="pane-title">Kategori</div>
+        <ul class="tree" role="tree">
+          <li role="treeitem" aria-expanded="true"><div class="node selected" data-filter="all" tabindex="0"><button class="twisty" aria-label="Buka/tutup kategori"><svg><use href="#i-chevron"/></svg></button><svg class="node-icon c-folder"><use href="#i-folder"/></svg>Semua Unduhan<b id="count-all">0</b></div>
+            <ul role="group">
+              <li role="treeitem"><div class="node" data-filter="category:video" tabindex="-1"><svg class="ficon c-video"><use href="#f-sheet"/><use href="#g-video"/></svg>Video<b id="count-video">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:audio" tabindex="-1"><svg class="ficon c-audio"><use href="#f-sheet"/><use href="#g-audio"/></svg>Musik<b id="count-audio">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:image" tabindex="-1"><svg class="ficon c-image"><use href="#f-sheet"/><use href="#g-image"/></svg>Gambar<b id="count-image">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:document" tabindex="-1"><svg class="ficon c-document"><use href="#f-sheet"/><use href="#g-document"/></svg>Dokumen<b id="count-document">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:archive" tabindex="-1"><svg class="ficon c-archive"><use href="#f-sheet"/><use href="#g-archive"/></svg>Terkompresi<b id="count-archive">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:program" tabindex="-1"><svg class="ficon c-program"><use href="#f-sheet"/><use href="#g-program"/></svg>Program<b id="count-program">0</b></div></li>
+              <li role="treeitem"><div class="node" data-filter="category:other" tabindex="-1"><svg class="ficon c-other"><use href="#f-sheet"/><use href="#g-other"/></svg>Lainnya<b id="count-other">0</b></div></li>
+            </ul></li>
+          <li role="treeitem"><div class="node" data-filter="unfinished" tabindex="-1"><svg class="node-icon c-amber"><use href="#i-hourglass"/></svg>Belum Selesai<b id="count-unfinished">0</b></div></li>
+          <li role="treeitem"><div class="node" data-filter="completed" tabindex="-1"><svg class="node-icon c-green"><use href="#i-check"/></svg>Selesai<b id="count-completed">0</b></div></li>
+          <li role="treeitem"><div class="node" data-filter="queued" tabindex="-1"><svg class="node-icon c-violet"><use href="#i-queue"/></svg>Antrean<b id="count-queued">0</b></div></li>
+        </ul>
+      </aside>
+
+      <main class="list-pane">
+        <div class="table-wrap" id="table-wrap">
+          <table class="grid" aria-label="Daftar unduhan">
+            <colgroup><col class="w-name"><col class="w-q"><col class="w-size"><col class="w-status"><col class="w-left"><col class="w-rate"><col class="w-last"><col class="w-desc"></colgroup>
+            <thead><tr>
+              <th data-sort="name" aria-sort="none">Nama File</th><th title="Urutan antrean">Q</th><th data-sort="size" aria-sort="none">Ukuran</th><th data-sort="status" aria-sort="none">Status</th>
+              <th>Sisa Waktu</th><th data-sort="rate" aria-sort="none">Kecepatan</th><th data-sort="last" aria-sort="none">Terakhir Dicoba</th><th>Keterangan</th>
+            </tr></thead>
+            <tbody id="jobs" aria-live="polite"></tbody>
+          </table>
+          <div id="empty" class="empty"><svg class="empty-icon"><use href="#i-stack"/></svg><h3>Belum ada unduhan</h3><p>Klik <b>Tambah URL</b> atau kirim tautan dari ekstensi Chrome.</p></div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <span id="connection">Menghubungkan…</span>
+      <span class="speed-box">Kecepatan: <strong id="speed">0 B/s</strong><canvas id="speed-graph" width="120" height="16" aria-hidden="true"></canvas></span>
+      <span id="after-all-status" class="after-chip" hidden></span>
+      <span>Aktif: <strong id="active">0</strong></span>
+      <span id="list-count">0 item</span>
+      <span id="output-path" class="grow"></span>
+      <span id="edition-label">Pengelola unduhan lokal</span>
+      <span class="version">v0.12.0</span>
+    </footer>
+  </div>
+
+  <div class="context-menu" id="context-menu" role="menu" hidden>
+    <button role="menuitem" data-command="open-file">Buka file</button>
+    <button role="menuitem" data-command="show-file">Tampilkan di folder</button>
+    <hr><button role="menuitem" data-command="resume">Lanjutkan</button>
+    <button role="menuitem" data-command="pause">Jeda</button>
+    <button role="menuitem" data-command="cancel">Batalkan</button>
+    <button role="menuitem" data-command="remove">Hapus dari daftar</button>
+    <hr><button role="menuitem" data-command="move-up">Naikkan di antrean</button>
+    <button role="menuitem" data-command="move-down">Turunkan di antrean</button>
+    <hr><button role="menuitem" data-command="refresh-address">Perbarui alamat unduhan…</button>
+    <button role="menuitem" data-command="checksum">Verifikasi checksum…</button>
+    <button role="menuitem" data-command="copy-url">Salin alamat unduhan</button>
+  </div>
+
+  <dialog id="add-dialog" aria-labelledby="add-title">
+    <div class="dialog-heading"><span class="tile teal small"><svg><use href="#i-add"/></svg></span><div><h2 id="add-title">Tambah alamat unduhan</h2><p>Tempel tautan file atau video YouTube.</p></div></div>
+    <div class="tabs" role="tablist"><button type="button" role="tab" id="tab-single" aria-selected="true">Satu URL</button><button type="button" role="tab" id="tab-batch" aria-selected="false">Banyak URL</button></div>
+    <form id="add-form" class="dialog-form">
+      <div id="single-fields" class="dialog-form">
+        <label for="url">Alamat (URL)</label><input id="url" name="url" type="url" required placeholder="https://contoh.com/file.zip" autocomplete="off">
+        <label for="filename">Simpan sebagai <span class="hint">opsional</span></label><input id="filename" placeholder="Otomatis dari server" maxlength="160">
+      </div>
+      <div id="batch-fields" class="dialog-form" hidden>
+        <label for="batch-urls">Satu tautan per baris <span class="hint">pola didukung: foto[001-120].jpg, bagian[a-f].zip</span></label>
+        <textarea id="batch-urls" rows="6" spellcheck="false" placeholder="https://contoh.com/file1.zip&#10;https://contoh.com/foto[001-050].jpg"></textarea>
+        <p id="batch-preview" class="support-note"></p>
+      </div>
+      <fieldset id="youtube-box" class="compact"><legend>YouTube</legend>
+        <div class="inline"><select id="youtube-quality" aria-label="Kualitas YouTube"></select><button type="button" id="youtube-inspect">Baca kualitas</button></div>
+        <label class="check-row"><input id="youtube-subtitles" type="checkbox"> Sertakan subtitle (Indonesia/Inggris, jika tersedia)</label>
+        <div id="playlist-box" hidden><p id="playlist-info" class="support-note"></p><label class="check-row"><input id="playlist-all" type="checkbox"> Tambahkan semua video di playlist</label></div>
+      </fieldset>
+      <p id="form-error" class="error" role="alert"></p>
+      <div class="dialog-footer"><button type="button" id="add-cancel">Batal</button><button class="primary" id="add-button" type="submit">Mulai unduh</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <div class="dialog-heading"><span class="tile red small"><svg><use href="#i-trash"/></svg></span><div><h2 id="confirm-title">Hapus dari daftar?</h2><p id="confirm-text"></p></div></div>
+    <div class="dialog-footer"><button id="confirm-no">Batal</button><button class="danger" id="confirm-yes">Hapus</button></div>
+  </dialog>
+
+  <dialog id="refresh-dialog" aria-labelledby="refresh-title">
+    <div class="dialog-heading"><span class="tile teal small"><svg><use href="#i-refresh"/></svg></span><div><h2 id="refresh-title">Perbarui alamat unduhan</h2><p>Lanjutkan unduhan dengan tautan baru tanpa mengulang dari awal.</p></div></div>
+    <dl class="kv"><dt>File</dt><dd id="refresh-file"></dd><dt>Alamat lama</dt><dd id="refresh-old" class="mono"></dd></dl>
+    <div class="steps-box">
+      <p><b>Cara 1 —</b> buka lagi halaman sumbernya di Chrome dan klik tautan/tombol <b>Unduh</b> lewat ZIVAR. ZIVAR menunggu <b id="refresh-countdown">3:00</b> dan memakai tautan berikutnya untuk unduhan ini.</p>
+      <p><b>Cara 2 —</b> tempel tautan baru di sini:</p>
+      <form id="refresh-form" class="inline"><input id="refresh-url" type="url" placeholder="https://…" autocomplete="off"><button class="primary" type="submit">Gunakan tautan ini</button></form>
+    </div>
+    <p id="refresh-error" class="error" role="alert"></p>
+    <div class="dialog-footer"><button id="refresh-cancel">Batal</button></div>
+  </dialog>
+
+  <dialog id="checksum-dialog" aria-labelledby="checksum-title">
+    <div class="dialog-heading"><span class="tile green small"><svg><use href="#i-shield"/></svg></span><div><h2 id="checksum-title">Verifikasi checksum</h2><p id="checksum-file"></p></div></div>
+    <form id="checksum-form" class="dialog-form">
+      <label>Algoritma<div class="inline"><select id="checksum-algorithm"><option value="sha256">SHA-256</option><option value="sha1">SHA-1</option><option value="md5">MD5</option></select><button class="primary" type="submit" id="checksum-run">Hitung</button></div></label>
+      <label>Hasil<input id="checksum-result" readonly class="mono" placeholder="Klik Hitung"></label>
+      <label>Bandingkan dengan nilai dari situs <span class="hint">opsional</span><input id="checksum-expected" class="mono" placeholder="Tempel checksum dari halaman unduhan" spellcheck="false"></label>
+      <p id="checksum-verdict" class="verdict" role="status"></p>
+    </form>
+    <div class="dialog-footer"><button id="checksum-copy">Salin hasil</button><button class="primary" id="checksum-close">Tutup</button></div>
+  </dialog>
+
+  <dialog id="about-dialog" aria-labelledby="about-title">
+    <div class="dialog-heading"><span class="tile teal small"><svg><use href="#i-stack"/></svg></span><div><h2 id="about-title">ZIVAR Download Manager</h2><p class="version-text">Versi 0.12.0</p></div></div>
+    <p class="support-note">Pengelola unduhan lokal dengan antrean, multi-koneksi, YouTube, HLS/DASH, dan ekstensi Chrome. Video DRM tidak didukung.</p>
+    <p class="support-note" id="about-extractor"></p>
+    <div id="update-box" class="steps-box" hidden><p id="update-text"></p><p id="update-notes" class="support-note"></p><div class="inline"><button class="primary" id="update-download" hidden>Unduh pembaruan</button></div></div>
+    <div class="dialog-footer"><button class="primary" id="about-close">Tutup</button></div>
+  </dialog>
+
+  <dialog id="grabber-dialog" aria-labelledby="grabber-title">
+    <div class="dialog-heading"><span class="tile cyan small"><svg><use href="#i-net"/></svg></span><div><h2 id="grabber-title">Site Grabber</h2><p>Pindai halaman pada domain yang sama dan masukkan file yang ditemukan ke antrean.</p></div></div>
+    <form id="grabber-form" class="dialog-form">
+      <label>URL halaman<input id="grabber-url" type="url" required placeholder="https://contoh.com/folder/"></label>
+      <div class="form-grid"><label>Kedalaman (0-3)<input id="grabber-depth" type="number" min="0" max="3" value="1"></label><label>Maksimal file<input id="grabber-max" type="number" min="1" max="500" value="100"></label></div>
+      <label>Jenis file (opsional)<input id="grabber-types" placeholder="video, image, document atau .pdf,.zip"></label>
+      <p id="grabber-status" class="setup-status" role="status"></p>
+      <div class="dialog-footer"><button type="button" id="grabber-cancel">Batal</button><button type="submit" class="primary" id="grabber-run">Mulai scan</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-heading"><span class="tile indigo small"><svg><use href="#i-sliders"/></svg></span><div><h2 id="settings-title">Pengaturan unduhan</h2><p>Perubahan berlaku untuk antrean baru dan unduhan yang sedang berjalan.</p></div></div>
+    <form id="settings-form" class="dialog-form settings-grid">
+      <fieldset><legend>Koneksi</legend>
+        <div class="form-grid"><label>Unduhan bersamaan<input id="concurrency" type="number" min="1" max="10" value="3"></label><label>Koneksi per file<input id="connections" type="number" min="1" max="16" value="4"></label></div>
+        <label>Pembatas kecepatan (KB/s, 0 = tanpa batas)<input id="speed-limit" type="number" min="0" max="1048576" step="1" value="0"></label>
+        <p class="support-note">Jumlah koneksi berlaku untuk unduhan baru. YouTube tidak memakai banyak koneksi karena justru diperlambat oleh servernya.</p>
+      </fieldset>
+      <fieldset><legend>File &amp; pemberitahuan</legend>
+        <label class="check-row"><input id="category-folders" type="checkbox"> Simpan ke subfolder kategori (Video, Audio, Dokumen, …)</label>
+        <label class="check-row"><input id="clipboard-monitor" type="checkbox"> Pantau clipboard dan masukkan URL yang disalin <span class="hint">desktop</span></label>
+        <label class="check-row"><input id="notifications" type="checkbox"> Tampilkan notifikasi saat unduhan selesai atau gagal <span class="hint">desktop</span></label>
+        <label>Setelah semua unduhan selesai<select id="after-all"><option value="none">Tidak melakukan apa-apa</option><option value="quit">Tutup ZIVAR</option><option value="sleep" class="desktop-only">Sleep komputer (hitung mundur 60 detik)</option><option value="shutdown" class="desktop-only">Matikan komputer (hitung mundur 60 detik)</option></select></label>
+      </fieldset>
+      <fieldset id="schedule-box"><legend>Penjadwal</legend>
+        <label class="check-row"><input id="schedule-enabled" type="checkbox"> Aktifkan jadwal antrean</label>
+        <div class="form-grid"><label>Mulai pada<input id="schedule-start" type="datetime-local"></label><label>Berhenti pada<input id="schedule-end" type="datetime-local"></label></div>
+        <p class="support-note">Di luar jadwal, unduhan aktif dijeda dan dilanjutkan otomatis saat jadwal dibuka kembali.</p>
+      </fieldset>
+      <fieldset><legend>Jaringan</legend>
+        <label>Proxy HTTP <span class="hint">kosongkan jika tidak dipakai</span><input id="proxy" placeholder="http://192.168.1.10:8080" autocomplete="off" spellcheck="false"></label>
+        <p id="proxy-note" class="support-note">Proxy dipakai untuk semua unduhan, YouTube, dan HLS/DASH. Perubahan berlaku setelah ZIVAR dimulai ulang.</p>
+      </fieldset>
+      <fieldset class="desktop-only"><legend>Sistem</legend>
+        <label class="check-row"><input id="auto-start" type="checkbox"> Jalankan ZIVAR saat Windows dinyalakan (langsung ke tray)</label>
+        <label class="check-row"><input id="auto-update-extractor" type="checkbox"> Periksa pembaruan extractor YouTube setiap minggu</label>
+        <div class="inline"><span id="extractor-status" class="support-note grow">Extractor: memeriksa versi…</span><button type="button" id="update-extractor">Perbarui sekarang</button></div>
+      </fieldset>
+      <p id="settings-status" class="setup-status" role="status"></p>
+      <div class="dialog-footer"><button type="button" id="settings-cancel">Batal</button><button type="submit" class="primary">Simpan</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="setup-dialog" aria-labelledby="setup-title">
+    <div class="dialog-heading"><span class="tile blue small"><svg><use href="#i-puzzle"/></svg></span><div><h2 id="setup-title">Panduan ekstensi Chrome</h2><p>Pemasangan ekstensi bersifat opsional. Unduhan dari URL tetap bisa digunakan tanpa ekstensi.</p></div></div>
+    <ol class="setup-steps">
+      <li><h3>Buka halaman ekstensi Chrome</h3><p>Di Chrome, ketik <code>chrome://extensions</code> pada bilah alamat. Aktifkan <b>Developer mode</b> di kanan atas.</p><button id="setup-copy-address">Salin alamat Chrome</button></li>
+      <li><h3>Pilih folder ekstensi ZIVAR</h3><p>Klik <b>Load unpacked</b> di Chrome, lalu pilih folder berikut.</p><input id="extension-path" aria-label="Lokasi folder ekstensi" readonly value="C:\ZIV\zivar-idm\extension"><div class="setup-buttons"><button id="open-extension-folder">Buka folder ekstensi</button><button id="setup-copy-folder">Salin lokasi folder</button></div></li>
+      <li><h3>Hubungkan dengan aplikasi</h3><p>Buka ikon <b>ZIVAR Download Companion</b> di Chrome. Tempel kode pairing, lalu klik <b>Hubungkan</b>.</p><div class="setup-buttons"><button id="copy-token">Salin kode pairing</button><button id="setup-check">Periksa koneksi</button></div><p id="setup-status" class="setup-status" role="status">Belum ada koneksi ekstensi yang terdeteksi.</p></li>
+    </ol>
+    <p class="setup-note">Setelah video diputar, klik Unduh video di kanan atas pemutar. Panduan ini dapat dibuka kembali dari tombol Panduan Chrome.</p>
+    <div class="dialog-footer"><button id="setup-later">Nanti</button><button id="setup-finish" class="primary">Selesai</button></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body></html>

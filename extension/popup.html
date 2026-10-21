@@ -1,0 +1,42 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ZIVAR Companion</title><link rel="stylesheet" href="popup.css"><script src="popup.js" defer></script></head><body>
+<svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4.5v10"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M6 19h12"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M4 9h16"/><path d="M7 7h.01M9.5 7h.01"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19 4.5V9h-4.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M9.5 14.5l5-5"/><path d="M11 7l1-1a3.5 3.5 0 0 1 5 5l-1 1"/><path d="M13 17l-1 1a3.5 3.5 0 0 1-5-5l1-1"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8.5" cy="14.5" r="3.5"/><path d="M11 12l7-7M15.5 7.5l2 2M13.5 9.5l1.5 1.5"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M10 9.5v5l4-2.5z" class="solid"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="brand"><span class="tile"><svg><use href="#i-down"/></svg></span><div><strong>ZIVAR</strong><small>Download Companion</small></div></div>
+  <button id="open-app" class="ghost" title="Buka aplikasi ZIVAR"><svg><use href="#i-open"/></svg>Buka aplikasi</button>
+</header>
+
+<div id="status" class="status">Memeriksa koneksi…</div>
+
+<details id="pairing" class="card">
+  <summary><svg><use href="#i-key"/></svg>Hubungkan aplikasi lokal</summary>
+  <p class="hint">Buka ZIVAR, klik <b>Panduan Chrome → Salin kode pairing</b>, lalu tempel di sini.</p>
+  <form id="pair-form"><label for="token" class="sr">Kode pairing</label><div class="inline"><input id="token" type="password" placeholder="Tempel kode pairing" autocomplete="off" required><button type="submit" class="primary">Hubungkan</button></div></form>
+</details>
+
+<section class="card media-card">
+  <div class="heading"><h2><svg><use href="#i-film"/></svg>Media di tab ini</h2><button id="refresh" class="ghost icon-only" title="Segarkan" aria-label="Segarkan"><svg><use href="#i-refresh"/></svg></button></div>
+  <p id="page-title"></p>
+  <div id="media"></div>
+  <p id="empty" class="empty">Putar video, lalu klik <b>Unduh video</b> di pojok kanan atas pemutar. Media yang terdeteksi juga muncul di sini.</p>
+</section>
+
+<form id="link-form" class="card">
+  <label for="url" class="label"><svg><use href="#i-link"/></svg>Unduh dari tautan</label>
+  <div class="inline"><input id="url" type="url" placeholder="https://…/file.zip" required><button type="submit" class="primary" aria-label="Kirim"><svg><use href="#i-down"/></svg>Kirim</button></div>
+</form>
+
+<label class="switch card"><input id="capture" type="checkbox"><span class="track"><span class="thumb"></span></span><span class="switch-text"><b>Alihkan unduhan Chrome ke ZIVAR</b><small>Jika aplikasi tidak menerima tautan, Chrome melanjutkan sendiri.</small></span></label>
+
+<p class="hint bottom">Pilih kualitas langsung dari tombol di pemutar. Mendukung MP4/WebM, HLS/DASH, dan YouTube. Video DRM tidak didukung.</p>
+<p id="message" role="status"></p>
+
+<template id="media-item"><div class="media"><span class="pill"></span><div class="info"><strong></strong><p></p></div><button class="primary wide"><svg><use href="#i-down"/></svg><span>Unduh dengan ZIVAR</span></button></div></template>
+</body></html>

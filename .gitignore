@@ -1,0 +1,14 @@
+.tools/
+analysis/extension-bundled/
+analysis/*.selected-strings.txt
+analysis/rea-evidence.json
+.data/
+downloads/
+tests/.tmp/
+node_modules/
+dist/
+# Large third-party binaries (bundled at build time, see README)
+vendor/**/*.exe
+# Test outputs and screenshots
+artifacts/
+scripts/_dbg-*.mjs

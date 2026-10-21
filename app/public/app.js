@@ -295,18 +295,43 @@ document.addEventListener('keydown', event => {
 });
 
 // ---------- sidebar & sorting ----------
-for (const element of $$('.tree [data-filter]')) element.addEventListener('click', event => {
-  if (event.target.closest('.twisty')) return;
+const filterNodes = $$('.tree [data-filter]');
+function selectFilter(element) {
   filter = element.dataset.filter;
-  for (const item of $$('.tree [data-filter]')) { item.classList.toggle('selected', item === element); item.tabIndex = item === element ? 0 : -1; }
+  for (const item of filterNodes) { item.classList.toggle('selected', item === element); item.tabIndex = item === element ? 0 : -1; }
   if (state) render();
-});
+}
+for (const element of filterNodes) {
+  element.addEventListener('click', event => {
+    if (event.target.closest('.twisty')) return;
+    selectFilter(element);
+  });
+  element.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault(); selectFilter(element);
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = filterNodes.indexOf(element);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? filterNodes.length - 1 : Math.max(0, Math.min(filterNodes.length - 1, index + (event.key === 'ArrowDown' ? 1 : -1)));
+    filterNodes[next]?.focus();
+  });
+}
 $('.twisty').addEventListener('click', event => { const item = event.target.closest('li'); item.setAttribute('aria-expanded', String(item.getAttribute('aria-expanded') !== 'true')); });
-for (const header of $$('th[data-sort]')) header.addEventListener('click', () => {
+function sortBy(header) {
   sort = sort.key === header.dataset.sort ? (sort.dir === 1 ? { key: header.dataset.sort, dir: -1 } : { key: null, dir: 1 }) : { key: header.dataset.sort, dir: 1 };
   for (const item of $$('th[data-sort]')) item.setAttribute('aria-sort', item === header && sort.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none');
   if (state) render();
-});
+}
+for (const header of $$('th[data-sort]')) {
+  header.tabIndex = 0;
+  header.addEventListener('click', () => sortBy(header));
+  header.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault(); sortBy(header);
+  });
+}
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme; $('#theme-item').textContent = theme === 'light' ? 'Tema gelap' : 'Tema terang';
   try { localStorage.setItem('zivar-theme', theme); } catch {}

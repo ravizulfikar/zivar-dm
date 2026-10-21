@@ -92,6 +92,7 @@ li[aria-expanded="true"] > .node .twisty svg { transform: rotate(90deg); }
 .grid th { position: sticky; top: 0; z-index: 2; text-align: left; font-weight: 400; color: var(--muted); padding: 5px 8px; background: var(--chrome-2); border-bottom: 1px solid var(--line-strong); border-right: 1px solid var(--line); white-space: nowrap; user-select: none; }
 .grid th[data-sort] { cursor: default; }
 .grid th[data-sort]:hover { color: var(--text); }
+.grid th[data-sort]:focus-visible { outline: 2px solid var(--select-line); outline-offset: -2px; }
 .grid th[aria-sort="ascending"]::after { content: " ▲"; font-size: 9px; }
 .grid th[aria-sort="descending"]::after { content: " ▼"; font-size: 9px; }
 .grid td { padding: 3px 8px; height: 26px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

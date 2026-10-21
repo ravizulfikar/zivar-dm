@@ -134,8 +134,8 @@
           <table class="grid" aria-label="Daftar unduhan">
             <colgroup><col class="w-name"><col class="w-q"><col class="w-size"><col class="w-status"><col class="w-left"><col class="w-rate"><col class="w-last"><col class="w-desc"></colgroup>
             <thead><tr>
-              <th data-sort="name" aria-sort="none">Nama File</th><th title="Urutan antrean">Q</th><th data-sort="size" aria-sort="none">Ukuran</th><th data-sort="status" aria-sort="none">Status</th>
-              <th>Sisa Waktu</th><th data-sort="rate" aria-sort="none">Kecepatan</th><th data-sort="last" aria-sort="none">Terakhir Dicoba</th><th>Keterangan</th>
+              <th data-sort="name" tabindex="0" aria-sort="none">Nama File</th><th title="Urutan antrean">Q</th><th data-sort="size" tabindex="0" aria-sort="none">Ukuran</th><th data-sort="status" tabindex="0" aria-sort="none">Status</th>
+              <th>Sisa Waktu</th><th data-sort="rate" tabindex="0" aria-sort="none">Kecepatan</th><th data-sort="last" tabindex="0" aria-sort="none">Terakhir Dicoba</th><th>Keterangan</th>
             </tr></thead>
             <tbody id="jobs" aria-live="polite"></tbody>
           </table>
@@ -152,7 +152,7 @@
       <span id="list-count">0 item</span>
       <span id="output-path" class="grow"></span>
       <span id="edition-label">Pengelola unduhan lokal</span>
-      <span class="version">v0.12.0</span>
+      <span class="version">v__APP_VERSION__</span>
     </footer>
   </div>
 
@@ -222,7 +222,7 @@
   </dialog>
 
   <dialog id="about-dialog" aria-labelledby="about-title">
-    <div class="dialog-heading"><span class="tile teal small"><svg><use href="#i-stack"/></svg></span><div><h2 id="about-title">ZIVAR Download Manager</h2><p class="version-text">Versi 0.12.0</p></div></div>
+    <div class="dialog-heading"><span class="tile teal small"><svg><use href="#i-stack"/></svg></span><div><h2 id="about-title">ZIVAR Download Manager</h2><p class="version-text">Versi __APP_VERSION__</p></div></div>
     <p class="support-note">Pengelola unduhan lokal dengan antrean, multi-koneksi, YouTube, HLS/DASH, dan ekstensi Chrome. Video DRM tidak didukung.</p>
     <p class="support-note" id="about-extractor"></p>
     <div id="update-box" class="steps-box" hidden><p id="update-text"></p><p id="update-notes" class="support-note"></p><div class="inline"><button class="primary" id="update-download" hidden>Unduh pembaruan</button></div></div>

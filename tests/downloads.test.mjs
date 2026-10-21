@@ -119,10 +119,10 @@ test('a paused queue survives application restart and resumes from disk', async 
 test('cross-origin redirects strip browser session credentials', async t => {
   const first = await resources(t), second = await resources(t);
   first.fixture.redirect = second.url + '/file';
-  const added = await first.manager.add({ url: first.url + '/redirect', headers: { cookie: 'secret=1', authorization: 'Bearer private', origin: first.url } });
+  const added = await first.manager.add({ url: first.url + '/redirect', headers: { cookie: 'secret=1', authorization: 'Bearer private', origin: first.url, referer: 'https://private.example/watch?token=1' } });
   await finished(first.manager, added.id);
   assert.ok(first.fixture.requests.some(req => req.headers.cookie === 'secret=1'));
-  assert.ok(second.fixture.requests.every(req => !req.headers.cookie && !req.headers.authorization && !req.headers.origin));
+  assert.ok(second.fixture.requests.every(req => !req.headers.cookie && !req.headers.authorization && !req.headers.origin && !req.headers.referer));
 });
 
 test('HTTP errors and malformed ranges never publish corrupt output', async t => {
@@ -208,7 +208,9 @@ test('browser-assisted job: ordered chunks, conflict resync, pause stops uploads
   await assert.rejects(manager.browserFinish(job.id), /belum lengkap/);
   await assert.rejects(manager.browserChunk(job.id, { key: 'file', offset: half, total: data.length + 1 }, data.subarray(half)), /berubah/);
   await manager.browserChunk(job.id, { key: 'file', offset: half, total: data.length }, data.subarray(half));
-  await manager.browserFinish(job.id);
+  const finishing = manager.browserFinish(job.id);
+  assert.equal(typeof manager.active.get(job.id)?.promise?.then, 'function', 'Browser assembly must be tracked by the active job');
+  await finishing;
   const done = await finished(manager, job.id);
   assert.equal(hash(await fs.readFile(done.outputPath)), hash(data)); assert.equal(done.filename, 'from-chrome.bin');
 });
@@ -245,6 +247,7 @@ test('settings control simultaneous downloads; queue order can be changed with m
   await until(() => manager.jobs.find(job => job.id === third.id).status === 'downloading');
   assert.equal(manager.jobs.find(job => job.id === second.id).status, 'queued', 'The job moved to the top must start first');
   await until(() => manager.jobs.find(job => job.id === third.id).parts.length > 0);
+  await until(() => manager.jobs.find(job => job.id === third.id).connectionCount === 2);
   assert.equal(manager.jobs.find(job => job.id === third.id).connectionCount, 2, 'New jobs use the configured connection count');
 });
 

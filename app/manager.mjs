@@ -93,7 +93,9 @@ async function request(url, initialHeaders, signal) {
         if (!location) throw new Error('Redirect tidak memiliki alamat tujuan.');
         const next = httpUrl(new URL(location, current).href);
         if (new URL(next).origin !== new URL(current).origin) {
-          delete headers.cookie; delete headers.authorization; delete headers.origin;
+          // Do not forward browser session material, including a page URL that
+          // may contain private query parameters, to the redirected origin.
+          delete headers.cookie; delete headers.authorization; delete headers.origin; delete headers.referer;
         }
         current = next;
         continue;
@@ -712,9 +714,10 @@ export class DownloadManager extends EventEmitter {
     if (!['downloading', 'queued'].includes(job.status)) return this.browserState(job);
     if (!job.parts.every(part => part.total && part.received === part.total)) throw new Error('Unduhan belum lengkap.');
     const controller = new AbortController();
-    this.active.set(job.id, { controller });
+    const entry = { controller };
+    this.active.set(job.id, entry);
     job.status = 'assembling'; job.speed = 0; this.changed(job);
-    (async () => {
+    entry.promise = (async () => {
       const assembled = path.join(this.dataDirectory, 'parts', `${job.id}.browser.out`);
       try {
         const keys = job.parts.map(part => part.key);

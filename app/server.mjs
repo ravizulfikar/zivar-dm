@@ -152,7 +152,7 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
       const filename = files[url.pathname];
       if (!filename) return json(res, 404, { error: 'Halaman tidak ditemukan.' });
       let contents = await fs.readFile(path.join(project, 'app', 'public', filename));
-      if (filename === 'index.html') contents = Buffer.from(contents.toString().replace('__PAIRING_TOKEN__', token));
+      if (filename === 'index.html') contents = Buffer.from(contents.toString().replaceAll('__PAIRING_TOKEN__', token).replaceAll('__APP_VERSION__', version));
       res.writeHead(200, { 'Content-Type': mime[path.extname(filename)] }); res.end(contents);
     } catch (error) {
       if (!res.headersSent) json(res, 400, { error: error.message }); else res.end();

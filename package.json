@@ -1,6 +1,6 @@
 {
   "name": "zivar-download-manager",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "private": true,
   "zivar": {
     "updateFeed": ""
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "electron .",
     "start:web": "node app/server.mjs",
-    "build:win": "electron-builder --win portable nsis --x64",
+    "build:win": "node scripts/ensure-vendor-binaries.mjs && electron-builder --win portable nsis --x64",
     "build:firefox": "node scripts/build-firefox.mjs",
     "test": "node --test tests/*.test.mjs"
   },

@@ -11,6 +11,11 @@ const runtime = () => path.join(process.resourcesPath || path.join(root, 'vendor
 let extractorCopy = null;
 export function useExtractorDirectory(directory) { extractorCopy = directory ? path.join(directory, 'yt-dlp.exe') : null; }
 const extractorExe = () => extractorCopy && existsSync(extractorCopy) ? extractorCopy : path.join(runtime(), 'yt-dlp.exe');
+function checkedExtractorExe() {
+  const executable = extractorExe();
+  if (!existsSync(executable)) throw new Error('Extractor yt-dlp belum tersedia. Instal ulang ZIVAR dengan installer versi terbaru.');
+  return executable;
+}
 function runPlain(exe, args, timeout = 120000) {
   return new Promise((resolve, reject) => {
     const child = spawn(exe, args, { windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -22,13 +27,13 @@ function runPlain(exe, args, timeout = 120000) {
     child.once('close', code => { clearTimeout(timer); code === 0 ? resolve(out.trim()) : reject(new Error((err || out).trim().split(/\r?\n/).slice(-2).join(' ') || `yt-dlp berhenti dengan kode ${code}`)); });
   });
 }
-export async function extractorVersion() { try { return await runPlain(extractorExe(), ['--version'], 30000); } catch { return null; } }
+export async function extractorVersion() { try { return await runPlain(checkedExtractorExe(), ['--version'], 30000); } catch { return null; } }
 // Copies the bundled extractor to the data folder (first time), then runs yt-dlp's own
 // updater, which downloads the official release and checks it against its checksums.
 export async function updateExtractor() {
   if (!extractorCopy) throw new Error('Folder extractor belum diatur.');
   await fs.mkdir(path.dirname(extractorCopy), { recursive: true });
-  if (!existsSync(extractorCopy)) await fs.copyFile(path.join(runtime(), 'yt-dlp.exe'), extractorCopy);
+  if (!existsSync(extractorCopy)) await fs.copyFile(checkedExtractorExe(), extractorCopy);
   const before = await extractorVersion();
   const output = await runPlain(extractorCopy, ['--ignore-config', '--no-colors', '--update-to', 'stable'], 180000);
   const after = await extractorVersion();
@@ -43,11 +48,18 @@ export function youtubeUrl(value) {
     return /^[\w-]{11}$/.test(id || '') ? `https://www.youtube.com/watch?v=${id}` : null;
   } catch { return null; }
 }
-const baseArgs = () => ['--ignore-config','--no-playlist','--no-warnings','--no-colors','--no-plugin-dirs','--socket-timeout','20','--retries','2','--js-runtimes',`node:${path.join(runtime(), 'node.exe')}`,'--ffmpeg-location',path.dirname(ffmpegPath())];
+const baseArgs = () => {
+  const args = ['--ignore-config','--no-playlist','--no-warnings','--no-colors','--no-plugin-dirs','--socket-timeout','20','--retries','2'];
+  const nodeRuntime = path.join(runtime(), 'node.exe');
+  if (existsSync(nodeRuntime)) args.push('--js-runtimes', `node:${nodeRuntime}`);
+  args.push('--ffmpeg-location', path.dirname(ffmpegPath()));
+  return args;
+};
 export function runExtractor(args, { signal, onLine, timeout = 180000 } = {}) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(signal.reason);
-    const child = spawn(extractorExe(), [...baseArgs(), ...args], { windowsHide: true, shell: false, stdio: ['ignore','pipe','pipe'] });
+    let executable; try { executable = checkedExtractorExe(); } catch (error) { return reject(error); }
+    const child = spawn(executable, [...baseArgs(), ...args], { windowsHide: true, shell: false, stdio: ['ignore','pipe','pipe'] });
     let output = '', error = '', pending = '', failure;
     const stop = () => {
       failure ||= signal?.reason || new Error('Extractor melewati batas waktu. Coba kembali.');

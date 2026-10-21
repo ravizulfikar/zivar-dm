@@ -2,6 +2,13 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.16.1] - 2026-10-22
+
+### Diperbaiki
+
+- Build Windows kini memastikan `yt-dlp.exe`, Node runtime, dan `ffmpeg.exe` tersedia serta tervalidasi sebelum installer dibuat.
+- Error extractor yang executable-nya hilang kini menampilkan pesan pemulihan yang jelas.
+
 ## [0.16.0] - 2026-10-22
 
 ### Ditambahkan

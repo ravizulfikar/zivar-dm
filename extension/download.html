@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ZIVAR Download Info</title>
+  <link rel="stylesheet" href="download.css">
+  <script src="download.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="top">
+      <div class="brand"><span class="tile">Z</span><div><strong>ZIVAR</strong><small>Download Info</small></div></div>
+      <span class="status-label">Browser</span>
+    </header>
+
+    <section class="card" aria-labelledby="title">
+      <p class="eyebrow">Download baru terdeteksi</p>
+      <h1 id="title">Menyiapkan informasi file...</h1>
+      <dl class="details">
+        <div><dt>Ukuran</dt><dd id="size">Memeriksa...</dd></div>
+        <div><dt>Jenis</dt><dd id="type">Memeriksa...</dd></div>
+        <div><dt>Sumber</dt><dd id="source">Memeriksa...</dd></div>
+      </dl>
+      <p id="error" class="error" role="alert" hidden></p>
+      <div class="actions">
+        <button id="start" class="primary" type="button" disabled>Mulai download</button>
+        <button id="browser" class="ghost" type="button" disabled>Lanjutkan di Chrome</button>
+      </div>
+      <p class="note">Mulai download memasukkan file ke antrean ZIVAR. File tidak akan disimpan dua kali oleh Chrome.</p>
+    </section>
+  </main>
+</body>
+</html>

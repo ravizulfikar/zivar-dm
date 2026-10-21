@@ -7,9 +7,10 @@ const chrome = {
   runtime: { id: 'test-extension', getURL: value => `chrome-extension://test/${value}`, onInstalled: { addListener() {} }, onMessage: { addListener() {} } },
   contextMenus: { removeAll(callback) { callback?.(); }, create() {}, onClicked: { addListener() {} } },
   webRequest: { onBeforeSendHeaders: { addListener() {} }, onHeadersReceived: { addListener() {} } },
-  tabs: { onUpdated: { addListener() {} }, onRemoved: { addListener() {} }, sendMessage() { return Promise.resolve(); } },
-  downloads: { onCreated: { addListener() {} } },
-  storage: { local: {}, session: {} },
+  tabs: { onUpdated: { addListener() {} }, onRemoved: { addListener() {} }, sendMessage() { return Promise.resolve(); }, create: async () => ({ id: 2 }), get: async () => ({ id: 2 }) },
+  windows: { onRemoved: { addListener() {} }, create: async () => ({ id: 1, tabs: [{ id: 2 }] }), get: async () => ({ id: 1 }) },
+  downloads: { onCreated: { addListener() {} }, search: async () => [], pause: async () => {}, resume: async () => {}, cancel: async () => {} },
+  storage: { local: { get: async () => ({}), set: async () => {}, remove: async () => {} }, session: { get: async () => ({}), set: async () => {}, remove: async () => {} } },
   action: {},
   alarms: { create() {}, onAlarm: { addListener() {} } }
 };

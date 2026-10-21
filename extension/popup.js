@@ -44,5 +44,5 @@ $('#open-app').addEventListener('click', async () => {
   try { const result = await send({ type: 'OPEN_APP' }); if (!result.data.desktop) await chrome.tabs.create({ url: 'http://127.0.0.1:18765' }); }
   catch (error) { message(error.message, true); }
 });
-chrome.storage.local.get(['captureDownloads', 'lastError']).then(data => { $('#capture').checked = Boolean(data.captureDownloads); if (data.lastError) message(data.lastError, true); });
+chrome.storage.local.get(['captureDownloads', 'lastError']).then(data => { $('#capture').checked = data.captureDownloads !== false; if (data.lastError) message(data.lastError, true); });
 check(); refresh().catch(error => message(error.message, true));

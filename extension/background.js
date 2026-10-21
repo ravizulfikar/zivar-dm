@@ -15,6 +15,10 @@ const manifestCache = new Map();
 const manifestTtl = 15000;
 const credentialTtl = 5 * 60 * 1000;
 const credentialHeaders = ['cookie', 'authorization', 'user-agent', 'origin', 'referer'];
+const downloadInfoPrefix = 'download-info:';
+const downloadCredentialPrefix = 'download-credentials:';
+const downloadInfoKey = id => `${downloadInfoPrefix}${id}`;
+const downloadCredentialKey = id => `${downloadCredentialPrefix}${id}`;
 function attributes(text) {
   const result = {};
   String(text || '').replace(/([A-Za-z][A-Za-z0-9_-]*)=("[^"]*"|'[^']*'|[^,\s>]+)/g, (_, key, value) => { result[key.toUpperCase()] = value.replace(/^['"]|['"]$/g, ''); return _; });
@@ -30,6 +34,117 @@ async function credentialsFor(tabId, url) {
   const record = stored[origin];
   if (!record || Date.now() - record.time > credentialTtl) return {};
   return { ...(record.headers || {}) };
+}
+function downloadFilename(download) {
+  const local = String(download.filename || '').split(/[\\/]/).pop();
+  if (local) return local;
+  try { return decodeURIComponent(new URL(download.finalUrl || download.url).pathname.split('/').pop() || '') || 'download'; } catch { return 'download'; }
+}
+function downloadId(value) {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 0) throw new Error('ID download tidak valid.');
+  return id;
+}
+async function pendingDownload(id) {
+  const key = downloadInfoKey(id);
+  return (await chrome.storage.local.get(key))[key] || null;
+}
+async function savePendingDownload(record) {
+  await chrome.storage.local.set({ [downloadInfoKey(record.id)]: record });
+}
+async function removePendingDownload(id) {
+  await chrome.storage.local.remove([downloadInfoKey(id)]);
+  if (typeof chrome.storage.session?.remove === 'function') await chrome.storage.session.remove(downloadCredentialKey(id)).catch(() => {});
+}
+async function downloadItem(id) {
+  return (await chrome.downloads.search({ id }))[0] || null;
+}
+async function capturedDownloadInfo(id) {
+  const record = await pendingDownload(id);
+  if (!record) throw new Error('Info download sudah tidak tersedia.');
+  const item = await downloadItem(id);
+  if (!item || ['complete', 'interrupted'].includes(item.state)) {
+    await removePendingDownload(id);
+    throw new Error('Download Chrome sudah tidak dapat dilanjutkan.');
+  }
+  return { ...record, filename: record.filename || downloadFilename(item), state: item.state, bytesReceived: item.bytesReceived, totalBytes: item.totalBytes > 0 ? item.totalBytes : record.totalBytes, mime: item.mime || record.mime };
+}
+async function openDownloadInfo(id) {
+  const url = `${chrome.runtime.getURL('download.html')}?id=${encodeURIComponent(id)}`;
+  try {
+    const popup = await chrome.windows.create({ url, type: 'popup', width: 520, height: 650, focused: true });
+    return { windowId: popup.id, tabId: popup.tabs?.[0]?.id ?? null };
+  } catch {
+    const tab = await chrome.tabs.create({ url });
+    return { windowId: null, tabId: tab.id };
+  }
+}
+async function interceptDownload(download) {
+  const id = download.id, url = download.finalUrl || download.url;
+  if (!Number.isInteger(id) || !validUrl(url) || url.startsWith(endpoint) || download.state !== 'in_progress') return;
+  if (await pendingDownload(id)) return;
+  const record = { id, url, filename: downloadFilename(download), mime: download.mime || '', totalBytes: download.totalBytes > 0 ? download.totalBytes : null, referrer: validUrl(download.referrer) ? download.referrer : '', tabId: Number.isInteger(download.tabId) && download.tabId >= 0 ? download.tabId : -1, createdAt: Date.now(), windowId: null, infoTabId: null, action: null };
+  let paused = false;
+  try {
+    await savePendingDownload(record);
+    await chrome.downloads.pause(id); paused = true;
+    const credentials = await credentialsFor(record.tabId, url);
+    if (Object.keys(credentials).length) await chrome.storage.session?.set({ [downloadCredentialKey(id)]: { headers: credentials, time: Date.now() } });
+    Object.assign(record, { state: 'paused', action: null }, await openDownloadInfo(id));
+    await savePendingDownload(record);
+  } catch (error) {
+    await removePendingDownload(id).catch(() => {});
+    if (paused) await chrome.downloads.resume(id).catch(() => {});
+    await chrome.storage.local.set({ lastError: error.message }).catch(() => {});
+  }
+}
+async function capturedCredentials(id, record) {
+  const key = downloadCredentialKey(id);
+  const stored = typeof chrome.storage.session?.get === 'function' ? (await chrome.storage.session.get(key))[key] : null;
+  if (stored?.headers) return stored.headers;
+  return credentialsFor(record.tabId, record.url);
+}
+async function startCapturedDownload(id) {
+  const record = await capturedDownloadInfo(id);
+  record.action = 'starting'; await savePendingDownload(record);
+  try {
+    const item = await downloadItem(id);
+    if (item?.state === 'in_progress') await chrome.downloads.pause(id);
+    const headers = await capturedCredentials(id, record);
+    const data = await api('/api/downloads', { url: record.url, filename: record.filename, headers: { ...headers, referer: record.referrer || '' } });
+    await chrome.downloads.cancel(id).catch(() => {});
+    await removePendingDownload(id);
+    await chrome.storage.local.set({ lastError: '' });
+    return data;
+  } catch (error) {
+    record.action = null; await savePendingDownload(record).catch(() => {});
+    throw error;
+  }
+}
+async function resumeCapturedDownload(id) {
+  const record = await pendingDownload(id);
+  if (!record) return { resumed: false };
+  record.action = 'resuming'; await savePendingDownload(record);
+  await chrome.downloads.resume(id).catch(() => {});
+  await removePendingDownload(id);
+  return { resumed: true };
+}
+async function pendingDownloadRecords() {
+  const all = await chrome.storage.local.get(null);
+  return Object.entries(all).filter(([key, value]) => key.startsWith(downloadInfoPrefix) && value?.id !== undefined).map(([, value]) => value);
+}
+async function recoverCapturedDownloads() {
+  for (const record of await pendingDownloadRecords()) {
+    try {
+      const item = await downloadItem(record.id);
+      if (!item || ['complete', 'interrupted'].includes(item.state)) { await removePendingDownload(record.id); continue; }
+      if (record.windowId) { try { await chrome.windows.get(record.windowId); continue; } catch {} }
+      if (record.infoTabId) { try { await chrome.tabs.get(record.infoTabId); continue; } catch {} }
+      if (item.state === 'in_progress') await chrome.downloads.pause(record.id);
+      Object.assign(record, { state: 'paused', action: null }, await openDownloadInfo(record.id));
+      await savePendingDownload(record);
+    } catch {}
+  }
 }
 function captureCredentials(details) {
   if (details.tabId < 0 || !validUrl(details.url)) return;
@@ -343,8 +458,13 @@ async function resumeBrowserJobs() {
   }
 }
 chrome.alarms.create('zivar-browser-jobs', { periodInMinutes: 0.5 });
-chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === 'zivar-browser-jobs') resumeBrowserJobs().catch(() => {}); });
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name !== 'zivar-browser-jobs') return;
+  resumeBrowserJobs().catch(() => {});
+  recoverCapturedDownloads().catch(() => {});
+});
 resumeBrowserJobs().catch(() => {});
+recoverCapturedDownloads().catch(() => {});
 
 async function remember(tabId, item) {
   if (tabId < 0 || !validUrl(item.url) || item.url.startsWith(endpoint)) return;
@@ -395,7 +515,8 @@ async function videoCandidates(sender) {
   const unique = [...new Map(items.filter(item => !isAd(item.url)).map(item => [item.url, item])).values()].slice(0, 40);
   return { items: unique, adsOnly: !unique.length && ads.length > 0 };
 }
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(details => {
+  if (details.reason === 'install') chrome.storage.local.get('captureDownloads').then(data => { if (data.captureDownloads === undefined) return chrome.storage.local.set({ captureDownloads: true }); }).catch(() => {});
   chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: 'zivar-download', title: 'Unduh dengan ZIVAR', contexts: ['link', 'video', 'audio'] }));
 });
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
@@ -428,23 +549,19 @@ chrome.tabs.onUpdated.addListener((tabId, change) => {
 });
 chrome.tabs.onRemoved.addListener(tabId => modify(() => chrome.storage.session.remove([`media:${tabId}`, `credentials:${tabId}`])).catch(() => {}));
 
-// Optional handoff pauses Chrome first; Chrome resumes if local acceptance fails.
+// IDM-style handoff: pause a normal browser download and ask before sending it
+// to the local queue. The original download remains available in Chrome.
 chrome.downloads.onCreated.addListener(async download => {
-  const { captureDownloads } = await chrome.storage.local.get('captureDownloads');
-  const url = download.finalUrl || download.url;
-  if (!captureDownloads || !validUrl(url) || url.startsWith(endpoint) || download.state !== 'in_progress') return;
-  let paused = false;
-  try {
-    await chrome.downloads.pause(download.id); paused = true;
-    const credentials = await credentialsFor(download.tabId ?? -1, url);
-    await api('/api/downloads', { url, headers: { ...credentials, referer: download.referrer || '' } });
-    await chrome.downloads.cancel(download.id);
-    await chrome.storage.local.set({ lastError: '' });
-  } catch (error) {
-    if (paused) await chrome.downloads.resume(download.id).catch(() => {});
-    await chrome.storage.local.set({ lastError: error.message });
-  }
+  const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
+  if (!captureDownloads) return;
+  await interceptDownload(download);
 });
+chrome.windows.onRemoved.addListener(windowId => pendingDownloadRecords().then(async records => {
+  for (const record of records) if (record.windowId === windowId && !record.action) await resumeCapturedDownload(record.id).catch(() => {});
+}).catch(() => {}));
+chrome.tabs.onRemoved.addListener(tabId => pendingDownloadRecords().then(async records => {
+  for (const record of records) if (record.infoTabId === tabId && !record.action) await resumeCapturedDownload(record.id).catch(() => {});
+}).catch(() => {}));
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   (async () => {
     if (message.type === 'MEDIA' && videoSender(sender)) {
@@ -501,8 +618,27 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       const data = await api('/api/downloads', { url: candidate.url, headers: { ...credentials, referer: sender.url } });
       return { ok: true, id: data.id, filename: data.filename };
     }
-    // Content scripts may report media, but only the extension's own popup may send downloads or pair.
-    if (sender.id !== chrome.runtime.id || sender.url !== chrome.runtime.getURL('popup.html')) throw new Error('Pengirim tidak diizinkan.');
+    // Content scripts may report media, but only the extension's own pages may
+    // pair the app or control a paused browser download.
+    const popupUrl = chrome.runtime.getURL('popup.html');
+    const downloadInfoUrl = chrome.runtime.getURL('download.html');
+    const pageUrl = String(sender.url || '');
+    const isPopup = sender.id === chrome.runtime.id && (pageUrl === popupUrl || pageUrl.startsWith(`${popupUrl}?`));
+    const isDownloadInfo = sender.id === chrome.runtime.id && (pageUrl === downloadInfoUrl || pageUrl.startsWith(`${downloadInfoUrl}?`));
+    if (!isPopup && !isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+    if (message.type === 'DOWNLOAD_INFO') {
+      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      return { ok: true, data: await capturedDownloadInfo(downloadId(message.id)) };
+    }
+    if (message.type === 'DOWNLOAD_INFO_START') {
+      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      return { ok: true, data: await startCapturedDownload(downloadId(message.id)) };
+    }
+    if (message.type === 'DOWNLOAD_INFO_RESUME') {
+      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      return { ok: true, data: await resumeCapturedDownload(downloadId(message.id)) };
+    }
+    if (!isPopup) throw new Error('Pengirim tidak diizinkan.');
     if (message.type === 'PAIR') {
       if (!/^[a-f0-9]{48}$/.test(message.token || '')) throw new Error('Format kode pairing tidak valid.');
       await chrome.storage.local.set({ token: message.token });

@@ -1,0 +1,29 @@
+:root { --bg: #17181b; --card: #212327; --card-2: #2a2d32; --line: #34373d; --text: #e6e8eb; --muted: #9aa1aa; --faint: #6c737c; --teal: #0f9e8e; --teal-2: #12b3a1; --bad: #fca5a5; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { min-width: 440px; margin: 0; padding: 18px; background: var(--bg); color: var(--text); font: 13px/1.45 "Segoe UI", system-ui, Arial, sans-serif; }
+button { font: inherit; color: inherit; cursor: pointer; border-radius: 8px; border: 1px solid transparent; padding: 9px 13px; }
+button:disabled { opacity: .55; cursor: default; }
+button:focus-visible { outline: 2px solid #2dd4bf; outline-offset: 2px; }
+main { max-width: 520px; margin: 0 auto; }
+.top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand strong { display: block; font-size: 17px; letter-spacing: .4px; }
+.brand small { display: block; color: var(--muted); font-size: 11px; }
+.tile { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 20px; font-weight: 700; }
+.status-label { color: var(--muted); font-size: 11px; }
+.card { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.eyebrow { margin: 0 0 5px; color: #5eead4; font-size: 11px; font-weight: 600; }
+h1 { margin: 0 0 16px; font-size: 20px; line-height: 1.25; overflow-wrap: anywhere; }
+.details { margin: 0 0 18px; }
+.details div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.details div:last-child { border-bottom: 1px solid var(--line); }
+dt { color: var(--muted); }
+dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+#source { color: var(--muted); font-size: 12px; }
+.error { margin: 0 0 14px; padding: 9px 10px; border: 1px solid #7f1d1d; border-radius: 7px; background: #3f1d24; color: var(--bad); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.primary { background: var(--teal); color: #fff; font-weight: 600; }
+.primary:hover:not(:disabled) { background: var(--teal-2); }
+.ghost { border-color: var(--line); background: var(--card-2); }
+.ghost:hover:not(:disabled) { border-color: #59616c; }
+.note { margin: 14px 0 0; color: var(--faint); font-size: 11px; }

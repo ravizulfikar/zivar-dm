@@ -2,6 +2,20 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.16.0] - 2026-10-22
+
+### Ditambahkan
+
+- Filter otomatis download browser berdasarkan ekstensi file dengan daftar bawaan bergaya IDM.
+- Wildcard `R0*` dan `R1*` untuk arsip multipart.
+- Daftar situs yang tidak boleh memulai capture otomatis, termasuk wildcard subdomain.
+- Pengaturan Integrasi browser untuk mengubah kedua daftar tanpa mengedit extension.
+
+### Diubah
+
+- Daftar situs pengecualian selalu diprioritaskan di atas daftar ekstensi.
+- Mengosongkan daftar ekstensi mematikan capture download browser otomatis.
+
 ## [0.15.0] - 2026-10-22
 
 ### Ditambahkan

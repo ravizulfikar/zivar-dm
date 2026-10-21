@@ -254,6 +254,14 @@
         <label class="check-row"><input id="notifications" type="checkbox"> Tampilkan notifikasi saat unduhan selesai atau gagal <span class="hint">desktop</span></label>
         <label>Setelah semua unduhan selesai<select id="after-all"><option value="none">Tidak melakukan apa-apa</option><option value="quit">Tutup ZIVAR</option><option value="sleep" class="desktop-only">Sleep komputer (hitung mundur 60 detik)</option><option value="shutdown" class="desktop-only">Matikan komputer (hitung mundur 60 detik)</option></select></label>
       </fieldset>
+      <fieldset class="settings-wide"><legend>Integrasi browser</legend>
+        <label for="browser-download-types">Mulai otomatis berdasarkan jenis file</label>
+        <textarea id="browser-download-types" rows="4" spellcheck="false" placeholder="EXE, MSI, ZIP, PDF"></textarea>
+        <p class="support-note">Pisahkan ekstensi dengan koma, spasi, atau baris baru. Kosongkan untuk mematikan capture otomatis. Gunakan <code>R0*</code> atau <code>R1*</code> untuk arsip berseri.</p>
+        <label for="browser-download-site-exclusions">Jangan mulai otomatis dari situs berikut</label>
+        <textarea id="browser-download-site-exclusions" rows="3" spellcheck="false" placeholder="*.example.com"></textarea>
+        <p class="support-note">Satu host per baris atau koma. Pola <code>*.example.com</code> mengecualikan domain tersebut dan subdomainnya, serta selalu mengalahkan daftar ekstensi.</p>
+      </fieldset>
       <fieldset id="schedule-box"><legend>Penjadwal</legend>
         <label class="check-row"><input id="schedule-enabled" type="checkbox"> Aktifkan jadwal antrean</label>
         <div class="form-grid"><label>Mulai pada<input id="schedule-start" type="datetime-local"></label><label>Berhenti pada<input id="schedule-end" type="datetime-local"></label></div>

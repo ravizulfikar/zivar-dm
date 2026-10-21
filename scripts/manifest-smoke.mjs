@@ -16,7 +16,13 @@ const chrome = {
 };
 const context = { chrome, fetch, URL, Map, Date, Set, Number, String, RegExp, Promise, AbortSignal, console };
 vm.createContext(context);
-vm.runInContext(`${source}\nglobalThis.__manifest = { hlsVariants, hlsMediaInfo, dashVariants, readManifest };`, context);
+vm.runInContext(`${source}\nglobalThis.__manifest = { hlsVariants, hlsMediaInfo, dashVariants, readManifest, browserDownloadTypeMatches, browserDownloadSiteExcluded };`, context);
+assert.equal(context.__manifest.browserDownloadTypeMatches({ filename: 'installer.exe', url: 'https://downloads.example/setup' }, ['EXE']), true);
+assert.equal(context.__manifest.browserDownloadTypeMatches({ filename: 'archive.r01', url: 'https://downloads.example/archive.r01' }, ['R0*', 'R1*']), true);
+assert.equal(context.__manifest.browserDownloadTypeMatches({ filename: 'photo.jpg', url: 'https://downloads.example/photo.jpg' }, ['EXE', 'ZIP']), false);
+assert.equal(context.__manifest.browserDownloadSiteExcluded({ url: 'https://foo.update.microsoft.com/setup.exe' }, ['*.update.microsoft.com']), true);
+assert.equal(context.__manifest.browserDownloadSiteExcluded({ url: 'https://update.microsoft.com/setup.exe' }, ['*.update.microsoft.com']), true);
+assert.equal(context.__manifest.browserDownloadSiteExcluded({ url: 'https://safe.example/setup.exe' }, ['*.update.microsoft.com']), false);
 const hls = context.__manifest.hlsVariants(`#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1200000,RESOLUTION=640x360,CODECS="avc1.4d401e"\nlow/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720,CODECS="avc1.64001f"\nhigh/index.m3u8`, 'https://media.example/master.m3u8');
 assert.equal(hls.length, 2); assert.equal(hls[1].height, 720); assert.equal(hls[1].bandwidth, 2800000); assert.equal(hls[1].url, 'https://media.example/high/index.m3u8');
 const hlsInfo = context.__manifest.hlsMediaInfo('#EXTM3U\n#EXTINF:4.004,\na.ts\n#EXTINF:5.996,\nb.ts\n#EXT-X-ENDLIST');

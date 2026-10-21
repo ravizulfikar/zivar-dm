@@ -19,6 +19,42 @@ const downloadInfoPrefix = 'download-info:';
 const downloadCredentialPrefix = 'download-credentials:';
 const downloadInfoKey = id => `${downloadInfoPrefix}${id}`;
 const downloadCredentialKey = id => `${downloadCredentialPrefix}${id}`;
+const defaultBrowserDownloadTypes = [
+  '3GP', '7Z', 'AAC', 'ACE', 'AIF', 'APK', 'ARJ', 'ASF', 'AVI', 'BIN', 'BZ2', 'EXE', 'GZ', 'GZIP', 'IMG', 'ISO',
+  'LZH', 'M4A', 'M4V', 'MKV', 'MOV', 'MP3', 'MP4', 'MPA', 'MPE', 'MPEG', 'MPG', 'MSI', 'MSU', 'OGG', 'OGV', 'PDF',
+  'PLJ', 'PPS', 'PPT', 'QT', 'R0*', 'R1*', 'RA', 'RAR', 'RM', 'RMVB', 'SEA', 'SIT', 'SITX', 'TAR', 'TIF', 'TIFF',
+  'WAV', 'WMA', 'WMV', 'Z', 'ZIP',
+];
+const defaultBrowserDownloadSiteExclusions = [
+  '*.update.microsoft.com', 'download.windowsupdate.com', '*.download.windowsupdate.com', 'siteseal.thawte.com',
+  'ecom.cimetz.com', '*.voice2page.com',
+];
+const browserRulesTtl = 10_000;
+let browserRulesCache = { time: 0, types: defaultBrowserDownloadTypes, siteExclusions: defaultBrowserDownloadSiteExclusions };
+function normalizedBrowserRuleList(value, fallback, pattern) {
+  if (value === undefined || value === null) return [...fallback];
+  const values = Array.isArray(value) ? value : String(value).split(/[\s,;]+/);
+  return [...new Set(values.map(item => String(item).trim().toUpperCase().replace(/^\./, '')).filter(item => pattern.test(item)))];
+}
+function downloadExtension(value) {
+  const clean = String(value || '').split(/[?#]/, 1)[0].replace(/[\\/]+$/, '');
+  const name = clean.split(/[\\/]/).pop() || '';
+  return /\.([A-Za-z0-9]{1,12})$/.exec(name)?.[1].toUpperCase() || '';
+}
+function browserDownloadTypeMatches(download, types) {
+  const extension = [downloadFilename(download), download.finalUrl, download.url].map(downloadExtension).find(Boolean) || '';
+  return Boolean(extension && types.some(pattern => pattern.endsWith('*') ? extension.startsWith(pattern.slice(0, -1)) : extension === pattern));
+}
+function browserDownloadSiteExcluded(download, siteExclusions) {
+  let hostname;
+  try { hostname = new URL(download.finalUrl || download.url).hostname.toLowerCase().replace(/\.$/, ''); } catch { return false; }
+  return siteExclusions.some(pattern => {
+    pattern = pattern.toLowerCase();
+    const wildcard = pattern.startsWith('*.');
+    const base = wildcard ? pattern.slice(2) : pattern;
+    return wildcard ? (hostname === base || hostname.endsWith(`.${base}`)) : hostname === base;
+  });
+}
 function attributes(text) {
   const result = {};
   String(text || '').replace(/([A-Za-z][A-Za-z0-9_-]*)=("[^"]*"|'[^']*'|[^,\s>]+)/g, (_, key, value) => { result[key.toUpperCase()] = value.replace(/^['"]|['"]$/g, ''); return _; });
@@ -280,6 +316,22 @@ async function api(route, body) {
   try { response = await fetch(endpoint + route, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Zivar-Client': 'extension' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(route === '/api/youtube/formats' ? 200000 : 10000) }); }
   catch { throw new Error('Aplikasi lokal belum terhubung. Buka ZIVAR.exe terlebih dahulu.'); }
   const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Aplikasi menolak permintaan.'); return data;
+}
+async function browserDownloadRules() {
+  if (Date.now() - browserRulesCache.time < browserRulesTtl) return browserRulesCache;
+  try {
+    const settings = await api('/api/settings');
+    browserRulesCache = {
+      time: Date.now(),
+      types: normalizedBrowserRuleList(settings.browserDownloadTypes, defaultBrowserDownloadTypes, /^[A-Z0-9]{1,12}\*?$/),
+      siteExclusions: normalizedBrowserRuleList(settings.browserDownloadSiteExclusions, defaultBrowserDownloadSiteExclusions, /^(?:\*\.)?[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)*$/),
+    };
+  } catch {}
+  return browserRulesCache;
+}
+async function shouldCaptureBrowserDownload(download) {
+  const rules = await browserDownloadRules();
+  return !browserDownloadSiteExcluded(download, rules.siteExclusions) && browserDownloadTypeMatches(download, rules.types);
 }
 // ---- Browser-assisted downloads ------------------------------------------------
 // Some CDNs (e.g. vidio.com on Akamai) answer only real browsers and return 403 to
@@ -554,6 +606,7 @@ chrome.tabs.onRemoved.addListener(tabId => modify(() => chrome.storage.session.r
 chrome.downloads.onCreated.addListener(async download => {
   const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
   if (!captureDownloads) return;
+  if (!await shouldCaptureBrowserDownload(download)) return;
   await interceptDownload(download);
 });
 chrome.windows.onRemoved.addListener(windowId => pendingDownloadRecords().then(async records => {

@@ -5,11 +5,22 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
-import { DownloadManager, safeFilename, normalizeProxy } from '../app/manager.mjs';
+import { DownloadManager, safeFilename, normalizeProxy, DEFAULT_BROWSER_DOWNLOAD_TYPES, DEFAULT_BROWSER_DOWNLOAD_SITE_EXCLUSIONS, normalizeBrowserDownloadTypes, normalizeBrowserDownloadSiteExclusions } from '../app/manager.mjs';
 import { startServer } from '../app/server.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+test('browser automatic capture rules normalize IDM types and site exclusions', () => {
+  assert.ok(DEFAULT_BROWSER_DOWNLOAD_TYPES.includes('EXE'));
+  assert.ok(DEFAULT_BROWSER_DOWNLOAD_TYPES.includes('R0*'));
+  assert.ok(DEFAULT_BROWSER_DOWNLOAD_SITE_EXCLUSIONS.includes('*.update.microsoft.com'));
+  assert.deepEqual(normalizeBrowserDownloadTypes('.exe, msi R1* invalid/type'), ['EXE', 'MSI', 'R1*']);
+  assert.deepEqual(normalizeBrowserDownloadSiteExclusions('*.Example.com\ninvalid/path\nexample.com'), ['*.example.com', 'example.com']);
+  assert.deepEqual(normalizeBrowserDownloadTypes(''), []);
+  assert.deepEqual(normalizeBrowserDownloadSiteExclusions(''), []);
+});
+
 async function until(predicate, timeout = 15000) {
   const start = Date.now();
   while (!predicate()) { if (Date.now() - start > timeout) throw new Error('Timeout waiting for condition.'); await wait(15); }

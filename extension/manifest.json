@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ZIVAR Download Companion",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Tampilkan info download browser dan kirim file atau video ke ZIVAR lokal.",
   "minimum_chrome_version": "116",
   "permissions": ["storage", "contextMenus", "webRequest", "downloads", "tabs", "windows", "alarms"],

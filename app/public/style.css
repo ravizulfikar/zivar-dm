@@ -183,7 +183,7 @@ body:not(.desktop) .desktop-only { display: none !important; }
 /* Dialog extras */
 #settings-dialog { width: min(760px, calc(100vw - 24px)); }
 .settings-grid { grid-template-columns: 1fr 1fr; align-items: start; }
-.settings-grid > p, .settings-grid > .dialog-footer { grid-column: 1 / -1; }
+.settings-grid > p, .settings-grid > .dialog-footer, .settings-grid > .settings-wide { grid-column: 1 / -1; }
 .tabs { display: flex; gap: 4px; margin: -4px 0 12px; border-bottom: 1px solid var(--line); }
 .tabs [role="tab"] { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 12px; color: var(--muted); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }

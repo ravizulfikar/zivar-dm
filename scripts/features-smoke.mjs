@@ -43,6 +43,14 @@ try {
   await page.waitForFunction(() => !document.querySelector('#settings-dialog').open);
   assert.equal(app.manager.concurrency, 1); assert.equal(app.manager.connections, 2);
 
+  await page.locator('#show-settings').click();
+  await page.locator('#browser-download-types').fill('EXE, MSI, R0*');
+  await page.locator('#browser-download-site-exclusions').fill('*.safe.example\nupdates.example');
+  await page.locator('#settings-form button[type="submit"]').click();
+  await page.waitForFunction(() => !document.querySelector('#settings-dialog').open);
+  assert.deepEqual(app.manager.settings().browserDownloadTypes, ['EXE', 'MSI', 'R0*']);
+  assert.deepEqual(app.manager.settings().browserDownloadSiteExclusions, ['*.safe.example', 'updates.example']);
+
   // Batch add with a numeric pattern.
   await page.locator('#tb-add').click(); await page.locator('#tab-batch').click();
   await page.locator('#batch-urls').fill(`${origin}/files/part[1-3].bin`);

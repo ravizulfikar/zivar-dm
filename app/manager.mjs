@@ -21,6 +21,35 @@ const CATEGORY_MIME = [
   ['program', /octet-stream|x-msdownload|x-apple-diskimage/],
 ];
 const allowedCategory = value => CATEGORIES.includes(String(value || '').toLowerCase()) ? String(value).toLowerCase() : null;
+export const DEFAULT_BROWSER_DOWNLOAD_TYPES = Object.freeze([
+  '3GP', '7Z', 'AAC', 'ACE', 'AIF', 'APK', 'ARJ', 'ASF', 'AVI', 'BIN', 'BZ2', 'EXE', 'GZ', 'GZIP', 'IMG', 'ISO',
+  'LZH', 'M4A', 'M4V', 'MKV', 'MOV', 'MP3', 'MP4', 'MPA', 'MPE', 'MPEG', 'MPG', 'MSI', 'MSU', 'OGG', 'OGV', 'PDF',
+  'PLJ', 'PPS', 'PPT', 'QT', 'R0*', 'R1*', 'RA', 'RAR', 'RM', 'RMVB', 'SEA', 'SIT', 'SITX', 'TAR', 'TIF', 'TIFF',
+  'WAV', 'WMA', 'WMV', 'Z', 'ZIP',
+]);
+export const DEFAULT_BROWSER_DOWNLOAD_SITE_EXCLUSIONS = Object.freeze([
+  '*.update.microsoft.com', 'download.windowsupdate.com', '*.download.windowsupdate.com', 'siteseal.thawte.com',
+  'ecom.cimetz.com', '*.voice2page.com',
+]);
+function listValues(value) { return Array.isArray(value) ? value : String(value ?? '').split(/[\s,;]+/); }
+export function normalizeBrowserDownloadTypes(value) {
+  if (value === undefined || value === null) return [...DEFAULT_BROWSER_DOWNLOAD_TYPES];
+  return [...new Set(listValues(value).map(item => String(item).trim().toUpperCase().replace(/^\./, '')).filter(item => /^[A-Z0-9]{1,12}\*?$/.test(item)))].slice(0, 200);
+}
+function normalizeSitePattern(value) {
+  let text = String(value || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!text) return null;
+  const wildcard = text.startsWith('*.');
+  if (wildcard) text = text.slice(2);
+  if (!text || text.includes('://') || /[\s\/?#:]/.test(text) || text.length > 253) return null;
+  const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+  if (!new RegExp(`^(?:${label})(?:\.(?:${label}))*$`).test(text)) return null;
+  return `${wildcard ? '*.' : ''}${text}`;
+}
+export function normalizeBrowserDownloadSiteExclusions(value) {
+  if (value === undefined || value === null) return [...DEFAULT_BROWSER_DOWNLOAD_SITE_EXCLUSIONS];
+  return [...new Set(listValues(value).map(normalizeSitePattern).filter(Boolean))].slice(0, 100);
+}
 export function classifyCategory(filename = '', contentType = '') {
   const mime = String(contentType || '').toLowerCase().split(';')[0];
   // Generic "binary" types say nothing about the file; the extension is more reliable then.
@@ -164,6 +193,8 @@ export class DownloadManager extends EventEmitter {
       afterAll: ['none', 'quit', 'sleep', 'shutdown'].includes(value.afterAll) ? value.afterAll : 'none',
       proxy: normalizeProxy(value.proxy),
       autoUpdateExtractor: value.autoUpdateExtractor === undefined ? true : Boolean(value.autoUpdateExtractor),
+      browserDownloadTypes: normalizeBrowserDownloadTypes(value.browserDownloadTypes),
+      browserDownloadSiteExclusions: normalizeBrowserDownloadSiteExclusions(value.browserDownloadSiteExclusions),
     };
   }
   applyLimits() { this.concurrency = this.settingsState.concurrency; this.connections = this.settingsState.connections; }

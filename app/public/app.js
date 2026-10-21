@@ -522,6 +522,8 @@ function fillSettings() {
   $('#category-folders').checked = Boolean(settings.categoryFolders); $('#clipboard-monitor').checked = Boolean(settings.clipboardMonitor);
   $('#notifications').checked = settings.notifications !== false; $('#after-all').value = settings.afterAll || 'none';
   $('#proxy').value = settings.proxy || ''; $('#auto-update-extractor').checked = settings.autoUpdateExtractor !== false;
+  $('#browser-download-types').value = Array.isArray(settings.browserDownloadTypes) ? settings.browserDownloadTypes.join(', ') : '';
+  $('#browser-download-site-exclusions').value = Array.isArray(settings.browserDownloadSiteExclusions) ? settings.browserDownloadSiteExclusions.join('\n') : '';
   $('#schedule-enabled').checked = Boolean(settings.schedule?.enabled); $('#schedule-start').value = localDateValue(settings.schedule?.startAt); $('#schedule-end').value = localDateValue(settings.schedule?.endAt);
   $('#auto-start').checked = Boolean(system.autoStart);
   $('#proxy-note').textContent = system.activeProxy ? `Proxy aktif: ${system.activeProxy.replace(/\/\/[^@]*@/, '//•••@')}. Perubahan berlaku setelah ZIVAR dimulai ulang.` : 'Proxy dipakai untuk semua unduhan, YouTube, dan HLS/DASH. Perubahan berlaku setelah ZIVAR dimulai ulang.';
@@ -550,6 +552,8 @@ $('#settings-form').addEventListener('submit', async event => {
       speedLimit: Math.floor(speed * 1024), concurrency: Number($('#concurrency').value), connections: Number($('#connections').value),
       categoryFolders: $('#category-folders').checked, clipboardMonitor: $('#clipboard-monitor').checked,
       notifications: $('#notifications').checked, afterAll: $('#after-all').value, proxy: $('#proxy').value.trim(), autoUpdateExtractor: $('#auto-update-extractor').checked,
+      browserDownloadTypes: $('#browser-download-types').value,
+      browserDownloadSiteExclusions: $('#browser-download-site-exclusions').value,
       schedule: { enabled: $('#schedule-enabled').checked, startAt: isoDateValue($('#schedule-start').value), endAt: isoDateValue($('#schedule-end').value) },
     }) });
     if (desktop && $('#auto-start').checked !== Boolean(system.autoStart)) system.autoStart = await desktop.setAutoStart($('#auto-start').checked);

@@ -16,6 +16,62 @@
     try { return await chrome.runtime.sendMessage(message) || { ok: false, error: 'Ekstensi tidak merespons.' }; }
     catch { return { ok: false, error: 'Ekstensi diperbarui. Muat ulang halaman, lalu coba kembali.' }; }
   }
+  const defaultBrowserDownloadTypes = [
+    '3GP', '7Z', 'AAC', 'ACE', 'AIF', 'APK', 'ARJ', 'ASF', 'AVI', 'BIN', 'BZ2', 'EXE', 'GZ', 'GZIP', 'IMG', 'ISO',
+    'LZH', 'M4A', 'M4V', 'MKV', 'MOV', 'MP3', 'MP4', 'MPA', 'MPE', 'MPEG', 'MPG', 'MSI', 'MSU', 'OGG', 'OGV', 'PDF',
+    'PLJ', 'PPS', 'PPT', 'QT', 'R0*', 'R1*', 'RA', 'RAR', 'RM', 'RMVB', 'SEA', 'SIT', 'SITX', 'TAR', 'TIF', 'TIFF',
+    'WAV', 'WMA', 'WMV', 'Z', 'ZIP',
+  ];
+  const defaultBrowserDownloadSiteExclusions = [
+    '*.UPDATE.MICROSOFT.COM', 'DOWNLOAD.WINDOWSUPDATE.COM', '*.DOWNLOAD.WINDOWSUPDATE.COM', 'SITESEAL.THAWTE.COM',
+    'ECOM.CIMETZ.COM', '*.VOICE2PAGE.COM',
+  ];
+  let browserLinkRules = { types: defaultBrowserDownloadTypes, siteExclusions: defaultBrowserDownloadSiteExclusions };
+  function linkFilename(anchor, url) {
+    const attribute = anchor.getAttribute('download');
+    if (attribute) return String(attribute).split(/[\\/]/).pop().trim();
+    try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || ''); } catch { return ''; }
+  }
+  function linkExtension(value) {
+    const clean = String(value || '').split(/[?#]/, 1)[0].replace(/[\\/]+$/, '');
+    const name = clean.split(/[\\/]/).pop() || '';
+    return /\.([A-Za-z0-9]{1,12})$/.exec(name)?.[1].toUpperCase() || '';
+  }
+  function linkSiteExcluded(url) {
+    let hostname; try { hostname = new URL(url).hostname.toLowerCase().replace(/\.$/, ''); } catch { return false; }
+    return browserLinkRules.siteExclusions.some(pattern => {
+      const value = String(pattern).toLowerCase();
+      const wildcard = value.startsWith('*.');
+      const base = wildcard ? value.slice(2) : value;
+      return wildcard ? (hostname === base || hostname.endsWith(`.${base}`)) : hostname === base;
+    });
+  }
+  function shouldCaptureLink(anchor, url) {
+    if (linkSiteExcluded(url)) return false;
+    const extension = linkExtension(linkFilename(anchor, url)) || linkExtension(url);
+    return Boolean(anchor.hasAttribute('download') || extension && browserLinkRules.types.some(pattern => pattern.endsWith('*') ? extension.startsWith(pattern.slice(0, -1)) : extension === pattern));
+  }
+  function anchorFromEvent(event) {
+    for (const node of event.composedPath?.() || []) {
+      if (node instanceof HTMLAnchorElement && node.href) return node;
+    }
+    return event.target?.closest?.('a[href]') || null;
+  }
+  async function refreshBrowserLinkRules() {
+    const result = await send({ type: 'BROWSER_DOWNLOAD_RULES' });
+    if (result.ok && Array.isArray(result.types) && Array.isArray(result.siteExclusions)) browserLinkRules = result;
+  }
+  document.addEventListener('click', event => {
+    if (!event.isTrusted || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const anchor = anchorFromEvent(event); if (!anchor || anchor.target === '_self' && anchor.href.startsWith(`${location.origin}${location.pathname}#`)) return;
+    let url; try { url = new URL(anchor.href, location.href).href; } catch { return; }
+    if (!http(url) || url.startsWith(`${location.origin}${location.pathname}#`) || !shouldCaptureLink(anchor, url)) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    send({ type: 'BROWSER_LINK_DOWNLOAD', url, filename: linkFilename(anchor, url), referrer: location.href })
+      .then(result => { if (!result.ok) toast(result.error); })
+      .catch(error => toast(error.message || 'Download tidak dapat dimulai.'));
+  }, true);
+  refreshBrowserLinkRules().catch(() => {});
   function toast(text) {
     const node = element('div', text);
     Object.assign(node.style, { position: 'fixed', right: '20px', bottom: '20px', zIndex: '2147483647', padding: '12px 16px 12px 14px', background: 'rgba(22,23,26,.96)', color: '#e6e8eb', border: '1px solid rgba(255,255,255,.14)', borderLeft: '4px solid #14b8a6', borderRadius: '10px', font: '13px "Segoe UI",system-ui,Arial,sans-serif', lineHeight: '1.45', maxWidth: '380px', boxShadow: '0 10px 30px rgba(0,0,0,.45)' });

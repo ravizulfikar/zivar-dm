@@ -2,6 +2,14 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.16.2] - 2026-10-22
+
+### Diperbaiki
+
+- Klik tautan file yang masuk daftar capture kini dicegat sebelum Chrome/Firefox membuat download halaman.
+- Download yang dibuat oleh extension memakai `saveAs: false`, sehingga dialog `Save As` browser tidak muncul bersamaan dengan `Download Info` ZIVAR.
+- Download yang dibuat oleh navigasi langsung, script, atau form tetap memakai fallback `onCreated`/`onDeterminingFilename`.
+
 ## [0.16.1] - 2026-10-22
 
 ### Diperbaiki

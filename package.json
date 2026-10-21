@@ -1,6 +1,6 @@
 {
   "name": "zivar-download-manager",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "private": true,
   "zivar": {
     "updateFeed": ""

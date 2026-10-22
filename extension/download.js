@@ -2,6 +2,7 @@ const $ = selector => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const id = Number(params.get('id'));
 let record = null;
+document.querySelector('.status-label').textContent = `v${chrome.runtime.getManifest().version}`;
 
 const send = async data => {
   const result = await chrome.runtime.sendMessage(data);

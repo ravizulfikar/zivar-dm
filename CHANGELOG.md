@@ -2,6 +2,21 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.16.4] - 2026-10-22
+
+### Diperbaiki
+
+- Klik file yang ditangkap langsung membuat info ZIVAR tanpa membuat download browser.
+- Download redirect seperti GitHub Releases dibatalkan saat penentuan nama file masih ditahan, bukan hanya dijeda sebelum dialog Save As.
+- Nama file dari Content-Disposition dipertahankan, termasuk untuk URL aset yang berupa ID.
+- Menutup info ZIVAR membatalkan pilihan; download browser hanya dimulai jika pengguna memilih Lanjutkan di Chrome.
+- Capture yang dimatikan, tipe file, dan pengecualian situs tetap dihormati; download diteruskan ke halaman jika aplikasi lokal tidak tersedia.
+- Dialog info menampilkan versi extension untuk memudahkan pengecekan update.
+
+### Validasi
+
+- Smoke test Chromium mencakup klik tanpa item download browser, redirect attachment tanpa ekstensi URL, pembatalan item browser, dan hasil file byte-exact di ZIVAR.
+
 ## [0.16.3] - 2026-10-22
 
 ### Diperbaiki

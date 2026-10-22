@@ -98,6 +98,7 @@ async function downloadItem(id) {
 async function capturedDownloadInfo(id) {
   const record = await pendingDownload(id);
   if (!record) throw new Error('Info download sudah tidak tersedia.');
+  if (record.detached) return record;
   const item = await downloadItem(id);
   if (!item || ['complete', 'interrupted'].includes(item.state)) {
     await removePendingDownload(id);
@@ -109,31 +110,13 @@ async function openDownloadInfo(id) {
   const url = `${chrome.runtime.getURL('download.html')}?id=${encodeURIComponent(id)}`;
   try {
     const popup = await chrome.windows.create({ url, type: 'popup', width: 520, height: 650, focused: true });
-    return { windowId: popup.id, tabId: popup.tabs?.[0]?.id ?? null };
+    return { windowId: popup.id, infoTabId: popup.tabs?.[0]?.id ?? null };
   } catch {
     const tab = await chrome.tabs.create({ url });
-    return { windowId: null, tabId: tab.id };
+    return { windowId: null, infoTabId: tab.id };
   }
 }
 const interceptingDownloads = new Map();
-const browserLinkContexts = new Map();
-const browserLinkContextById = new Map();
-function browserLinkContextKey(url, filename) { return `${url}\n${filename || ''}`; }
-function registerBrowserLinkContext(url, filename, context) {
-  const key = browserLinkContextKey(url, filename);
-  const queue = browserLinkContexts.get(key) || [];
-  queue.push(context); browserLinkContexts.set(key, queue);
-}
-function takeBrowserLinkContext(download) {
-  const byId = browserLinkContextById.get(download.id);
-  if (byId) { browserLinkContextById.delete(download.id); return byId; }
-  const key = browserLinkContextKey(download.finalUrl || download.url, downloadFilename(download));
-  const queue = browserLinkContexts.get(key);
-  const context = queue?.shift();
-  if (queue?.length) browserLinkContexts.set(key, queue); else browserLinkContexts.delete(key);
-  if (context) context.claimed = true;
-  return context || null;
-}
 async function interceptDownload(download) {
   const id = download.id;
   if (interceptingDownloads.has(id)) return interceptingDownloads.get(id);
@@ -145,19 +128,19 @@ async function interceptDownloadNow(download) {
   const id = download.id, url = download.finalUrl || download.url;
   if (!Number.isInteger(id) || !validUrl(url) || url.startsWith(endpoint) || download.state !== 'in_progress') return;
   if (await pendingDownload(id)) return;
-  const linkContext = takeBrowserLinkContext(download);
-  const record = { id, url, filename: downloadFilename(download), mime: download.mime || '', totalBytes: download.totalBytes > 0 ? download.totalBytes : null, referrer: validUrl(linkContext?.referrer) ? linkContext.referrer : validUrl(download.referrer) ? download.referrer : '', tabId: Number.isInteger(linkContext?.tabId) && linkContext.tabId >= 0 ? linkContext.tabId : Number.isInteger(download.tabId) && download.tabId >= 0 ? download.tabId : -1, createdAt: Date.now(), windowId: null, infoTabId: null, action: null };
-  let paused = false;
+  const record = { id, url, filename: downloadFilename(download), mime: download.mime || '', totalBytes: download.totalBytes > 0 ? download.totalBytes : null, referrer: validUrl(download.referrer) ? download.referrer : '', tabId: Number.isInteger(download.tabId) && download.tabId >= 0 ? download.tabId : -1, createdAt: Date.now(), windowId: null, infoTabId: null, action: null, detached: true, browserId: id };
   try {
+    await api('/api/state');
+    // Cancel while filename determination is held; pausing leaves the Save As
+    // target-selection step active in Chromium.
+    await chrome.downloads.cancel(id);
     await savePendingDownload(record);
-    await chrome.downloads.pause(id); paused = true;
-    const credentials = linkContext?.credentials || await credentialsFor(record.tabId, url);
+    const credentials = await credentialsFor(record.tabId, url);
     if (Object.keys(credentials).length) await chrome.storage.session?.set({ [downloadCredentialKey(id)]: { headers: credentials, time: Date.now() } });
-    Object.assign(record, { state: 'paused', action: null }, await openDownloadInfo(id));
+    Object.assign(record, { state: 'waiting', action: null }, await openDownloadInfo(id));
     await savePendingDownload(record);
   } catch (error) {
     await removePendingDownload(id).catch(() => {});
-    if (paused) await chrome.downloads.resume(id).catch(() => {});
     await chrome.storage.local.set({ lastError: error.message }).catch(() => {});
   }
 }
@@ -171,11 +154,11 @@ async function startCapturedDownload(id) {
   const record = await capturedDownloadInfo(id);
   record.action = 'starting'; await savePendingDownload(record);
   try {
-    const item = await downloadItem(id);
+    const item = record.detached ? null : await downloadItem(id);
     if (item?.state === 'in_progress') await chrome.downloads.pause(id);
     const headers = await capturedCredentials(id, record);
     const data = await api('/api/downloads', { url: record.url, filename: record.filename, headers: { ...headers, referer: record.referrer || '' } });
-    await chrome.downloads.cancel(id).catch(() => {});
+    if (!record.detached) await chrome.downloads.cancel(id).catch(() => {});
     await removePendingDownload(id);
     await chrome.storage.local.set({ lastError: '' });
     return data;
@@ -188,7 +171,17 @@ async function resumeCapturedDownload(id) {
   const record = await pendingDownload(id);
   if (!record) return { resumed: false };
   record.action = 'resuming'; await savePendingDownload(record);
-  await chrome.downloads.resume(id).catch(() => {});
+  if (record.detached) {
+    // onCreated and onDeterminingFilename may both fire before download() resolves.
+    const key = `browser-pass:${record.url}`;
+    await chrome.storage.session.set({ [key]: Date.now() + 60000 });
+    try { await chrome.downloads.download({ url: record.url, filename: record.filename, saveAs: true }); }
+    catch (error) {
+      await chrome.storage.session.remove(key);
+      record.action = null; await savePendingDownload(record);
+      throw error;
+    }
+  } else await chrome.downloads.resume(id);
   await removePendingDownload(id);
   return { resumed: true };
 }
@@ -199,12 +192,12 @@ async function pendingDownloadRecords() {
 async function recoverCapturedDownloads() {
   for (const record of await pendingDownloadRecords()) {
     try {
-      const item = await downloadItem(record.id);
-      if (!item || ['complete', 'interrupted'].includes(item.state)) { await removePendingDownload(record.id); continue; }
+      const item = record.detached ? null : await downloadItem(record.id);
+      if (!record.detached && (!item || ['complete', 'interrupted'].includes(item.state))) { await removePendingDownload(record.id); continue; }
       if (record.windowId) { try { await chrome.windows.get(record.windowId); continue; } catch {} }
       if (record.infoTabId) { try { await chrome.tabs.get(record.infoTabId); continue; } catch {} }
-      if (item.state === 'in_progress') await chrome.downloads.pause(record.id);
-      Object.assign(record, { state: 'paused', action: null }, await openDownloadInfo(record.id));
+      if (item?.state === 'in_progress') await chrome.downloads.pause(record.id);
+      Object.assign(record, { state: record.detached ? 'waiting' : 'paused', action: null }, await openDownloadInfo(record.id));
       await savePendingDownload(record);
     } catch {}
   }
@@ -364,16 +357,6 @@ function cleanDownloadFilename(value) {
   const filename = String(value || '').split(/[\\/]/).pop().replace(/[<>:"|?*\u0000-\u001f]/g, '_').trim();
   return filename ? filename.slice(0, 180) : '';
 }
-function downloadOptionsForLink(url, filename, headers = {}) {
-  const options = { url, saveAs: false, conflictAction: 'uniquify' };
-  const safeFilename = cleanDownloadFilename(filename);
-  if (safeFilename) options.filename = safeFilename;
-  const requestHeaders = Object.entries(headers)
-    .filter(([name, value]) => credentialHeaders.includes(name.toLowerCase()) && typeof value === 'string' && value && !/[\r\n]/.test(value))
-    .map(([name, value]) => ({ name, value: value.slice(0, credentialLimit[name.toLowerCase()] || 2048) }));
-  if (requestHeaders.length) options.headers = requestHeaders;
-  return options;
-}
 async function startBrowserLinkDownload(message, sender) {
   const url = String(message.url || '');
   if (!validUrl(url)) throw new Error('Tautan download tidak valid.');
@@ -381,38 +364,36 @@ async function startBrowserLinkDownload(message, sender) {
   const probe = { url, finalUrl: url, filename, tabId: sender.tab.id };
   const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
   const capture = captureDownloads && await shouldCaptureBrowserDownload(probe);
+  if (!capture) return { captured: false };
+  await api('/api/state');
   const credentials = await credentialsFor(sender.tab.id, url);
-  if (capture) registerBrowserLinkContext(url, filename || downloadFilename(probe), { tabId: sender.tab.id, referrer: String(message.referrer || ''), credentials });
+  const id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  const record = { id, url, filename: filename || downloadFilename(probe), totalBytes: null, mime: '', referrer: sender.url, tabId: sender.tab.id, detached: true, state: 'waiting', createdAt: Date.now(), action: null, windowId: null, infoTabId: null };
   try {
-    const id = await chrome.downloads.download(downloadOptionsForLink(url, filename, { ...credentials, referer: String(message.referrer || '') }));
-    if (capture) {
-      const key = browserLinkContextKey(url, filename || downloadFilename(probe));
-      const queue = browserLinkContexts.get(key) || [];
-      const context = queue.find(item => !item.claimed);
-      if (context) {
-        const index = queue.indexOf(context); queue.splice(index, 1);
-        if (queue.length) browserLinkContexts.set(key, queue); else browserLinkContexts.delete(key);
-        browserLinkContextById.set(id, context);
-      }
-    }
-    return id;
+    await savePendingDownload(record);
+    if (Object.keys(credentials).length) await chrome.storage.session.set({ [downloadCredentialKey(id)]: { headers: credentials, time: Date.now() } });
+    Object.assign(record, await openDownloadInfo(id));
+    await savePendingDownload(record);
+    return { captured: true, id };
   } catch (error) {
-    // Some Chromium versions reject one of the forwarded request headers. The
-    // browser still has the right cookies, so retry without custom headers.
-    if (!Object.keys(credentials).length && !message.referrer) throw error;
-    const id = await chrome.downloads.download(downloadOptionsForLink(url, filename));
-    if (capture) {
-      const key = browserLinkContextKey(url, filename || downloadFilename(probe));
-      const queue = browserLinkContexts.get(key) || [];
-      const context = queue.find(item => !item.claimed);
-      if (context) {
-        const index = queue.indexOf(context); queue.splice(index, 1);
-        if (queue.length) browserLinkContexts.set(key, queue); else browserLinkContexts.delete(key);
-        browserLinkContextById.set(id, context);
-      }
-    }
-    return id;
+    await removePendingDownload(id);
+    throw error;
   }
+}
+async function browserDownloadBypassed(download) {
+  const idKey = `browser-pass-id:${download.id}`;
+  const keys = [`browser-pass:${download.url}`, `browser-pass:${download.finalUrl || download.url}`];
+  const stored = await chrome.storage.session.get([idKey, ...keys]);
+  if (Number(stored[idKey]) > Date.now()) return true;
+  if (!keys.some(key => Number(stored[key]) > Date.now())) return false;
+  await chrome.storage.session.set({ [idKey]: Date.now() + 60000 });
+  await chrome.storage.session.remove(keys);
+  return true;
+}
+async function dismissCapturedDownload(id) {
+  const record = await pendingDownload(id);
+  if (record?.detached) return removePendingDownload(id);
+  return resumeCapturedDownload(id);
 }
 // ---- Browser-assisted downloads ------------------------------------------------
 // Some CDNs (e.g. vidio.com on Akamai) answer only real browsers and return 403 to
@@ -682,31 +663,29 @@ chrome.tabs.onUpdated.addListener((tabId, change) => {
 });
 chrome.tabs.onRemoved.addListener(tabId => modify(() => chrome.storage.session.remove([`media:${tabId}`, `credentials:${tabId}`])).catch(() => {}));
 
-// onCreated is the fallback for downloads started by navigation, scripts, forms,
-// and browser features that a content script cannot see. A click intercepted by
-// content.js starts through downloads.download({ saveAs: false }) instead, so the
-// browser's own Save As preference never gets a chance to open a second dialog.
+// Hold filename determination until cancellation finishes. Releasing suggest()
+// after merely pausing lets Chromium proceed to its Save As prompt.
 if (chrome.downloads.onDeterminingFilename?.addListener) {
   chrome.downloads.onDeterminingFilename.addListener((download, suggest) => {
     (async () => {
       const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
-      const rules = browserRulesCache.time ? browserRulesCache : { types: defaultBrowserDownloadTypes, siteExclusions: defaultBrowserDownloadSiteExclusions };
-      if (captureDownloads && !browserDownloadSiteExcluded(download, rules.siteExclusions) && browserDownloadTypeMatches(download, rules.types)) await interceptDownload(download);
+      if (captureDownloads && !await browserDownloadBypassed(download) && await shouldCaptureBrowserDownload(download)) await interceptDownload(download);
     })().catch(() => {}).finally(() => suggest());
     return true;
   });
 }
 chrome.downloads.onCreated.addListener(async download => {
+  if (chrome.downloads.onDeterminingFilename?.addListener) return;
   const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
-  if (!captureDownloads) return;
+  if (!captureDownloads || await browserDownloadBypassed(download)) return;
   if (!await shouldCaptureBrowserDownload(download)) return;
   await interceptDownload(download);
 });
 chrome.windows.onRemoved.addListener(windowId => pendingDownloadRecords().then(async records => {
-  for (const record of records) if (record.windowId === windowId && !record.action) await resumeCapturedDownload(record.id).catch(() => {});
+  for (const record of records) if (record.windowId === windowId && !record.action) await dismissCapturedDownload(record.id).catch(() => {});
 }).catch(() => {}));
 chrome.tabs.onRemoved.addListener(tabId => pendingDownloadRecords().then(async records => {
-  for (const record of records) if (record.infoTabId === tabId && !record.action) await resumeCapturedDownload(record.id).catch(() => {});
+  for (const record of records) if (record.infoTabId === tabId && !record.action) await dismissCapturedDownload(record.id).catch(() => {});
 }).catch(() => {}));
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   (async () => {
@@ -766,11 +745,11 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     }
     if (message.type === 'BROWSER_DOWNLOAD_RULES' && videoSender(sender)) {
       const rules = await browserDownloadRules();
-      return { ok: true, types: rules.types, siteExclusions: rules.siteExclusions };
+      const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
+      return { ok: true, enabled: captureDownloads, types: rules.types, siteExclusions: rules.siteExclusions };
     }
     if (message.type === 'BROWSER_LINK_DOWNLOAD' && videoSender(sender)) {
-      const id = await startBrowserLinkDownload(message, sender);
-      return { ok: true, id, browser: true };
+      return { ok: true, ...await startBrowserLinkDownload(message, sender) };
     }
     // Content scripts may report media, but only the extension's own pages may
     // pair the app or control a paused browser download.

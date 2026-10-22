@@ -26,7 +26,7 @@
     '*.UPDATE.MICROSOFT.COM', 'DOWNLOAD.WINDOWSUPDATE.COM', '*.DOWNLOAD.WINDOWSUPDATE.COM', 'SITESEAL.THAWTE.COM',
     'ECOM.CIMETZ.COM', '*.VOICE2PAGE.COM',
   ];
-  let browserLinkRules = { types: defaultBrowserDownloadTypes, siteExclusions: defaultBrowserDownloadSiteExclusions };
+  let browserLinkRules = { enabled: true, types: defaultBrowserDownloadTypes, siteExclusions: defaultBrowserDownloadSiteExclusions };
   function linkFilename(anchor, url) {
     const attribute = anchor.getAttribute('download');
     if (attribute) return String(attribute).split(/[\\/]/).pop().trim();
@@ -47,9 +47,9 @@
     });
   }
   function shouldCaptureLink(anchor, url) {
-    if (linkSiteExcluded(url)) return false;
+    if (!browserLinkRules.enabled || linkSiteExcluded(url)) return false;
     const extension = linkExtension(linkFilename(anchor, url)) || linkExtension(url);
-    return Boolean(anchor.hasAttribute('download') || extension && browserLinkRules.types.some(pattern => pattern.endsWith('*') ? extension.startsWith(pattern.slice(0, -1)) : extension === pattern));
+    return Boolean(extension && browserLinkRules.types.some(pattern => pattern.endsWith('*') ? extension.startsWith(pattern.slice(0, -1)) : extension === pattern));
   }
   function anchorFromEvent(event) {
     for (const node of event.composedPath?.() || []) {
@@ -62,9 +62,16 @@
     if (result.ok && Array.isArray(result.types) && Array.isArray(result.siteExclusions)) browserLinkRules = result;
   }
   let lastCapturedLink = { key: '', time: 0 };
+  const browserLinks = new WeakSet();
+  function continueLink(anchor) {
+    browserLinks.add(anchor);
+    try { anchor.click(); } finally { browserLinks.delete(anchor); }
+  }
   function captureLinkEvent(event) {
+    if (!event.isTrusted && !navigator.userActivation?.isActive) return;
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = anchorFromEvent(event); if (!anchor || anchor.target === '_self' && anchor.href.startsWith(`${location.origin}${location.pathname}#`)) return;
+    if (browserLinks.has(anchor)) return;
     let url; try { url = new URL(anchor.href, location.href).href; } catch { return; }
     if (!http(url) || url.startsWith(`${location.origin}${location.pathname}#`) || !shouldCaptureLink(anchor, url)) return;
     const key = `${url}\n${linkFilename(anchor, url)}`;
@@ -73,12 +80,17 @@
     event.preventDefault(); event.stopImmediatePropagation();
     if (duplicate) return;
     send({ type: 'BROWSER_LINK_DOWNLOAD', url, filename: linkFilename(anchor, url), referrer: location.href })
-      .then(result => { if (!result.ok) toast(result.error); })
+      .then(result => {
+        if (!result.ok) { toast(result.error); continueLink(anchor); }
+        else if (!result.captured) continueLink(anchor);
+      })
       .catch(error => toast(error.message || 'Download tidak dapat dimulai.'));
   }
-  document.addEventListener('pointerdown', event => { if (event.isTrusted) captureLinkEvent(event); }, true);
-  document.addEventListener('mousedown', event => { if (event.isTrusted) captureLinkEvent(event); }, true);
-  document.addEventListener('click', captureLinkEvent, true);
+  window.addEventListener('click', captureLinkEvent, true);
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.captureDownloads) browserLinkRules.enabled = changes.captureDownloads.newValue !== false;
+  });
+  window.addEventListener('focus', () => refreshBrowserLinkRules().catch(() => {}));
   refreshBrowserLinkRules().catch(() => {});
   function toast(text) {
     const node = element('div', text);

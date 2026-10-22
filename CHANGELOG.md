@@ -2,6 +2,14 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.16.3] - 2026-10-22
+
+### Diperbaiki
+
+- Download yang dipicu tombol atau script halaman kini ikut ditangkap ketika menghasilkan klik tautan file secara sintetis.
+- Interception dimulai sejak `pointerdown`/`mousedown` untuk mencegah handler halaman membuka dialog browser lebih dulu.
+- Event pointer, mouse, dan click yang sama dideduplikasi agar satu klik hanya membuat satu `Download Info`.
+
 ## [0.16.2] - 2026-10-22
 
 ### Diperbaiki

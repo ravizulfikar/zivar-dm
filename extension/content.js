@@ -61,16 +61,24 @@
     const result = await send({ type: 'BROWSER_DOWNLOAD_RULES' });
     if (result.ok && Array.isArray(result.types) && Array.isArray(result.siteExclusions)) browserLinkRules = result;
   }
-  document.addEventListener('click', event => {
-    if (!event.isTrusted || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  let lastCapturedLink = { key: '', time: 0 };
+  function captureLinkEvent(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = anchorFromEvent(event); if (!anchor || anchor.target === '_self' && anchor.href.startsWith(`${location.origin}${location.pathname}#`)) return;
     let url; try { url = new URL(anchor.href, location.href).href; } catch { return; }
     if (!http(url) || url.startsWith(`${location.origin}${location.pathname}#`) || !shouldCaptureLink(anchor, url)) return;
+    const key = `${url}\n${linkFilename(anchor, url)}`;
+    const duplicate = lastCapturedLink.key === key && Date.now() - lastCapturedLink.time < 1500;
+    lastCapturedLink = { key, time: Date.now() };
     event.preventDefault(); event.stopImmediatePropagation();
+    if (duplicate) return;
     send({ type: 'BROWSER_LINK_DOWNLOAD', url, filename: linkFilename(anchor, url), referrer: location.href })
       .then(result => { if (!result.ok) toast(result.error); })
       .catch(error => toast(error.message || 'Download tidak dapat dimulai.'));
-  }, true);
+  }
+  document.addEventListener('pointerdown', event => { if (event.isTrusted) captureLinkEvent(event); }, true);
+  document.addEventListener('mousedown', event => { if (event.isTrusted) captureLinkEvent(event); }, true);
+  document.addEventListener('click', captureLinkEvent, true);
   refreshBrowserLinkRules().catch(() => {});
   function toast(text) {
     const node = element('div', text);

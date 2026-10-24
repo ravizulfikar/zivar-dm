@@ -13,8 +13,8 @@
   const sources = video => [...new Set([video.currentSrc, video.src, ...[...video.querySelectorAll('source')].map(source => source.src)].filter(http))];
   const element = (tag, text) => { const node = document.createElement(tag); if (text) node.textContent = text; return node; };
   async function send(message) {
-    try { return await chrome.runtime.sendMessage(message) || { ok: false, error: 'Ekstensi tidak merespons.' }; }
-    catch { return { ok: false, error: 'Ekstensi diperbarui. Muat ulang halaman, lalu coba kembali.' }; }
+    try { return await chrome.runtime.sendMessage(message) || { ok: false, error: ZI.t('ext.noResponse') }; }
+    catch { return { ok: false, error: ZI.t('ext.reloaded') }; }
   }
   const defaultBrowserDownloadTypes = [
     '3GP', '7Z', 'AAC', 'ACE', 'AIF', 'APK', 'ARJ', 'ASF', 'AVI', 'BIN', 'BZ2', 'EXE', 'GZ', 'GZIP', 'IMG', 'ISO',
@@ -84,7 +84,7 @@
         if (!result.ok) { toast(result.error); continueLink(anchor); }
         else if (!result.captured) continueLink(anchor);
       })
-      .catch(error => toast(error.message || 'Download tidak dapat dimulai.'));
+      .catch(error => toast(error.message || ZI.t('ov.cannotStart')));
   }
   window.addEventListener('click', captureLinkEvent, true);
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -125,7 +125,7 @@
     return exact.length ? [...new Map([...exact, ...direct].map(item => [item.url, item])).values()] : pool;
   }
   function describe(item) {
-    let name = 'Video terdeteksi';
+    let name = ZI.t('ov.detected');
     try { const url = new URL(item.url); name = decodeURIComponent(url.pathname.split('/').pop()) || url.hostname; } catch {}
     return [name, item.manifestType || format(item), quality(item), bitrate(item), codec(item)].filter(Boolean).join(' · ');
   }
@@ -175,31 +175,31 @@
       state.exact = null; state.reason = null; state.multiple = false;
       state.host.dataset.zivarState = 'checking';
       state.primary.dataset.checking = '';
-      setLabel(state, 'Memeriksa video...');
-      state.primary.setAttribute('aria-label', 'ZIVAR sedang memeriksa video');
-      state.primary.title = 'ZIVAR sedang membaca kualitas video yang tersedia';
-      state.menu.replaceChildren(element('p', 'ZIVAR sedang membaca kualitas video yang tersedia. Tunggu sebentar...'));
+      setLabel(state, ZI.t('ov.checking'));
+      state.primary.setAttribute('aria-label', ZI.t('ov.checkingAria'));
+      state.primary.title = ZI.t('ov.checkingTitle');
+      state.menu.replaceChildren(element('p', ZI.t('ov.checkingMenu')));
       return;
     }
     delete state.primary.dataset.checking;
     const items = available(state), urls = sources(state.video), direct = items.filter(item => !item.stream), variants = items.filter(item => item.stream && item.variant);
     state.exact = items.find(item => !item.stream && urls.includes(item.url));
-    state.reason = siteReason || (state.encrypted || state.video.mediaKeys ? 'Video terenkripsi/DRM belum didukung.' : null);
-    if (!state.reason && !items.some(item => !item.stream) && variants.length && variants.every(item => item.drm)) state.reason = 'Video ini dilindungi DRM. ZIVAR tidak dapat melewati sistem lisensinya.';
-    if (!state.reason && !items.length && adsOnly) state.reason = 'Iklan sedang diputar. Tunggu iklan selesai sampai video utama berjalan, lalu coba kembali.';
-    if (!state.reason && !items.some(item => !item.stream) && !variants.length) state.reason = items.some(item => item.stream) ? 'Stream HLS/DASH belum didukung. Pilih file video MP4/WebM langsung.' : 'URL video langsung belum ditemukan. Putar videonya beberapa saat, lalu coba kembali.';
+    state.reason = siteReason || (state.encrypted || state.video.mediaKeys ? ZI.t('ov.drmPlayer') : null);
+    if (!state.reason && !items.some(item => !item.stream) && variants.length && variants.every(item => item.drm)) state.reason = ZI.t('ov.drmVariants');
+    if (!state.reason && !items.length && adsOnly) state.reason = ZI.t('ov.adPlaying');
+    if (!state.reason && !items.some(item => !item.stream) && !variants.length) state.reason = items.some(item => item.stream) ? ZI.t('ov.streamUnsupported') : ZI.t('ov.noDirect');
     const ready = !state.reason && state.exact;
     state.multiple = !state.reason && (direct.length > 1 || variants.length > 1);
     state.host.dataset.zivarState = state.busy ? 'busy' : state.reason ? 'unsupported' : ready ? 'ready' : 'choose';
-    if (!state.busy) setLabel(state, state.reason ? 'Video belum didukung' : state.multiple ? 'Pilih kualitas' : ready ? 'Unduh video' : 'Pilih media video');
-    state.primary.setAttribute('aria-label', state.reason ? 'Informasi dukungan video ZIVAR' : ready ? 'Unduh video dengan ZIVAR' : 'Pilih media video ZIVAR');
-    state.primary.title = state.reason || 'Kirim video ini ke aplikasi ZIVAR';
+    if (!state.busy) setLabel(state, state.reason ? ZI.t('ov.unsupportedLabel') : state.multiple ? ZI.t('ov.pickQuality') : ready ? ZI.t('ov.download') : ZI.t('ov.pickMedia'));
+    state.primary.setAttribute('aria-label', state.reason ? ZI.t('ov.infoAria') : ready ? ZI.t('ov.downloadAria') : ZI.t('ov.pickMediaAria'));
+    state.primary.title = state.reason || ZI.t('ov.sendTitle');
     state.menu.replaceChildren();
     if (state.reason) state.menu.append(element('p', state.reason));
     else {
-      state.menu.append(element('p', variants.length ? 'Varian kualitas terdeteksi. Klik kualitas untuk menggabungkan video + audio menjadi MP4.' : state.exact ? 'Video untuk pemutar ini' : 'Media terdeteksi di halaman ini. Pilih file yang sesuai.'));
+      state.menu.append(element('p', variants.length ? ZI.t('ov.variants') : state.exact ? ZI.t('ov.thisPlayer') : ZI.t('ov.pageMedia')));
       if (direct.length > 1) {
-        const all = element('button', `Unduh semua (${direct.length})`); all.className = 'media all'; all.addEventListener('click', event => { if (event.isTrusted) { event.stopPropagation(); downloadMany(state, direct); } }); state.menu.append(all);
+        const all = element('button', ZI.t('ov.all', { n: direct.length })); all.className = 'media all'; all.addEventListener('click', event => { if (event.isTrusted) { event.stopPropagation(); downloadMany(state, direct); } }); state.menu.append(all);
       }
       // When quality variants exist, the raw manifest entry is just noise; show best quality first.
       const listed = variants.length ? [...direct, ...[...variants].sort((a, b) => (Number(b.height) || 0) - (Number(a.height) || 0))] : items;
@@ -210,10 +210,10 @@
         // Pill = quality; headline = format + size; then technical facts; then the file name, small.
         const hasQuality = Boolean(quality(item));
         const pill = element('span', quality(item) || format(item) || 'Video'); pill.className = `pill${hasQuality ? '' : ' muted'}`;
-        let fileName = 'Video terdeteksi'; try { const url = new URL(item.url); fileName = decodeURIComponent(url.pathname.split('/').pop()) || url.hostname; } catch {}
+        let fileName = ZI.t('ov.detected'); try { const url = new URL(item.url); fileName = decodeURIComponent(url.pathname.split('/').pop()) || url.hostname; } catch {}
         const headline = hasQuality ? [item.manifestType || format(item), size(item)].filter(Boolean).join(' · ') : fileName;
         const resolution = item.width && item.height ? `${item.width}x${item.height}` : '';
-        const facts = item.drm ? 'DRM — sistem lisensi resmi diperlukan' : item.stream && !item.variant ? 'HLS/DASH — belum didukung'
+        const facts = item.drm ? ZI.t('ov.drmFact') : item.stream && !item.variant ? ZI.t('ov.hlsFact')
           : [bitrate(item), resolution, duration(item.duration || state.video.duration), hasQuality ? '' : size(item), codec(item)].filter(Boolean).join(' · ') || [new URL(item.url).hostname, item.mime?.split(';')[0]].filter(Boolean).join(' · ');
         const text = element('span'); text.className = 'text';
         const title = element('span', headline); title.className = 'title';
@@ -225,21 +225,21 @@
   }
   async function download(state, item) {
     if (state.busy || state.reason || item.drm || item.stream && !item.variant) return;
-    if (state.encrypted || state.video.mediaKeys) { toast('Video terenkripsi/DRM belum didukung.'); return; }
+    if (state.encrypted || state.video.mediaKeys) { toast(ZI.t('ov.drmPlayer')); return; }
     const current = sources(state.video);
-    if (!item.variant && current.length && !current.includes(item.url)) { scheduleRefresh(); toast('Sumber video berubah. Klik Unduh video kembali.'); return; }
-    state.busy = true; state.primary.disabled = true; state.host.dataset.zivarState = 'busy'; setLabel(state, 'Mengirim...'); state.menu.hidden = true; state.arrow.setAttribute('aria-expanded', 'false');
+    if (!item.variant && current.length && !current.includes(item.url)) { scheduleRefresh(); toast(ZI.t('ov.sourceChanged')); return; }
+    state.busy = true; state.primary.disabled = true; state.host.dataset.zivarState = 'busy'; setLabel(state, ZI.t('ov.sending')); state.menu.hidden = true; state.arrow.setAttribute('aria-expanded', 'false');
     try {
       const result = await send({ type: 'VIDEO_DOWNLOAD', url: item.url });
       if (!result.ok) throw new Error(result.error);
-      toast(result.browser ? 'Situs ini hanya melayani browser, jadi video diunduh lewat Chrome. Biarkan Chrome tetap terbuka sampai selesai.' : 'Video dikirim ke antrean ZIVAR.');
+      toast(result.browser ? ZI.t('ov.browserOnly') : ZI.t('ov.sent'));
     } catch (error) { toast(error.message); }
     finally { state.busy = false; state.primary.disabled = false; render(state); }
   }
   async function downloadMany(state, items) {
     if (state.busy || state.reason || !items.length) return;
-    if (state.encrypted || state.video.mediaKeys) { toast('Video terenkripsi/DRM belum didukung.'); return; }
-    state.busy = true; state.primary.disabled = true; state.host.dataset.zivarState = 'busy'; setLabel(state, 'Mengirim...'); state.menu.hidden = true; state.arrow.setAttribute('aria-expanded', 'false');
+    if (state.encrypted || state.video.mediaKeys) { toast(ZI.t('ov.drmPlayer')); return; }
+    state.busy = true; state.primary.disabled = true; state.host.dataset.zivarState = 'busy'; setLabel(state, ZI.t('ov.sending')); state.menu.hidden = true; state.arrow.setAttribute('aria-expanded', 'false');
     let added = 0;
     try {
       for (const item of items) {
@@ -247,8 +247,8 @@
         if (!result.ok) throw new Error(result.error);
         added++;
       }
-      toast(`${added} pilihan video dikirim ke antrean ZIVAR.`);
-    } catch (error) { toast(added ? `${added} video dikirim. ${error.message}` : error.message); }
+      toast(ZI.t('ov.manySent', { n: added }));
+    } catch (error) { toast(added ? ZI.t('ov.partial', { n: added, error: error.message }) : error.message); }
     finally { state.busy = false; state.primary.disabled = false; render(state); }
   }
   // Icons are built with DOM APIs (not innerHTML) so pages with Trusted Types (YouTube) accept them.
@@ -300,16 +300,16 @@
   ].join('');
   const setLabel = (state, text) => { state.label.textContent = text; };
   function createPanel(video) {
-    const host = element('div'); host.dataset.zivarVideoPanel = ''; host.setAttribute('aria-label', 'Kontrol unduh ZIVAR');
+    const host = element('div'); host.dataset.zivarVideoPanel = ''; host.setAttribute('aria-label', ZI.t('ov.panelAria'));
     const shadow = host.attachShadow({ mode: 'open' });
     const style = element('style'); style.textContent = PANEL_STYLE;
     const bar = element('div'); bar.className = 'bar';
     const badge = element('span'); badge.className = 'icon';
     badge.append(icon('down', 'M12 4.5v10', 'M7.5 10.5 12 15l4.5-4.5', 'M6 19h12'), icon('alert', 'M12 7v6.5', 'M12 17v.01'));
-    const label = element('span', 'Unduh video'); label.className = 'label';
-    const primary = element('button'); primary.className = 'primary'; primary.dataset.action = 'download'; primary.setAttribute('aria-label', 'Unduh video dengan ZIVAR'); primary.append(badge, label);
-    const arrow = element('button'); arrow.className = 'arrow'; arrow.setAttribute('aria-label', 'Pilihan media video'); arrow.setAttribute('aria-expanded', 'false'); arrow.append(icon('', 'M7 10l5 5 5-5'));
-    const close = element('button'); close.className = 'close'; close.setAttribute('aria-label', 'Sembunyikan tombol ZIVAR'); close.append(icon('', 'M7 7l10 10', 'M17 7 7 17'));
+    const label = element('span', ZI.t('ov.download')); label.className = 'label';
+    const primary = element('button'); primary.className = 'primary'; primary.dataset.action = 'download'; primary.setAttribute('aria-label', ZI.t('ov.downloadAria')); primary.append(badge, label);
+    const arrow = element('button'); arrow.className = 'arrow'; arrow.setAttribute('aria-label', ZI.t('ov.mediaChoices')); arrow.setAttribute('aria-expanded', 'false'); arrow.append(icon('', 'M7 10l5 5 5-5'));
+    const close = element('button'); close.className = 'close'; close.setAttribute('aria-label', ZI.t('ov.hide')); close.append(icon('', 'M7 7l10 10', 'M17 7 7 17'));
     const menu = element('div'); menu.className = 'menu'; menu.hidden = true;
     bar.append(primary, arrow, close); shadow.append(style, bar, menu);
     const state = { video, host, primary, label, menu, arrow, played: !video.paused && video.readyState > 0, dismissed: false, busy: false, encrypted: false, multiple: false };

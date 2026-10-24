@@ -1,0 +1,171 @@
+// Interface text. English is the default; Indonesian is selected with the EN/ID switch.
+// Add new strings to BOTH dictionaries (tests/i18n.test.mjs fails when they differ).
+(() => {
+  const en = {
+    'nav.add': 'New download', 'nav.library': 'Library', 'nav.all': 'All downloads', 'nav.unfinished': 'Unfinished', 'nav.queued': 'Queued', 'nav.completed': 'Completed',
+    'nav.categories': 'Categories', 'nav.tools': 'Tools', 'nav.grabber': 'Site Grabber', 'nav.scheduler': 'Scheduler', 'nav.extension': 'Browser extension', 'nav.folder': 'Download folder', 'nav.settings': 'Settings',
+    'cat.video': 'Video', 'cat.audio': 'Music', 'cat.image': 'Images', 'cat.document': 'Documents', 'cat.archive': 'Archives', 'cat.program': 'Programs', 'cat.other': 'Other',
+    'theme.toggle': 'Switch theme', 'about.open': 'About ZIVAR',
+    'sort.label': 'Sort', 'sort.default': 'Newest first', 'sort.name': 'Name', 'sort.size': 'Size', 'sort.status': 'Status', 'sort.rate': 'Speed', 'sort.last': 'Date',
+    'search.placeholder': 'Search file or site…', 'search.aria': 'Search downloads',
+    'menu.more': 'More', 'menu.afterAll': 'When all downloads finish', 'menu.selectAll': 'Select all', 'menu.clearDone': 'Clear completed', 'menu.quit': 'Quit ZIVAR', 'menu.quitNote': 'Close the browser tab to quit.',
+    'after.none': 'Do nothing', 'after.quit': 'Close ZIVAR', 'after.sleep': 'Sleep computer', 'after.shutdown': 'Shut down computer',
+    'after.sleepCountdown': 'Sleep computer (60-second countdown)', 'after.shutdownCountdown': 'Shut down computer (60-second countdown)',
+    'after.chip': 'When done: {action}', 'after.noneToast': 'No action after downloads finish.', 'after.toast': 'When all downloads finish: {action}.',
+    'stat.speed': 'Speed', 'stat.active': 'Active', 'stat.queued': 'Waiting', 'stat.done': 'Completed',
+    'act.resume': 'Resume', 'act.pause': 'Pause', 'act.remove': 'Remove', 'act.open': 'Open', 'act.pauseAll': 'Pause all', 'act.resumeAll': 'Resume all', 'act.clearDone': 'Clear completed',
+    'empty.title': 'No downloads yet', 'empty.text': 'Click <b>New download</b> or send a link from the browser extension.',
+    'status.connecting': 'Connecting…', 'status.connected': 'Connected locally', 'status.disconnected': 'App disconnected', 'status.web': 'Local download manager', 'status.desktop': 'Desktop download manager', 'status.folder': 'Folder: {path}',
+    'status.queued': 'Queued', 'status.downloading': 'Downloading', 'status.pausing': 'Pausing…', 'status.paused': 'Paused', 'status.assembling': 'Merging…', 'status.completed': 'Completed', 'status.cancelling': 'Cancelling…', 'status.cancelled': 'Cancelled', 'status.error': 'Failed',
+    'list.one': '{n} item', 'list.many': '{n} items', 'list.selected': '{n} selected',
+    'time.s': '{n} sec', 'time.ms': '{m} min {s} sec', 'time.hm': '{h} hr {m} min',
+    'job.viaChrome': '{host} · downloaded through Chrome', 'job.left': '{time} left',
+    'ctx.open': 'Open file', 'ctx.show': 'Show in folder', 'ctx.cancel': 'Cancel download', 'ctx.remove': 'Remove from list', 'ctx.moveTop': 'Move to front of queue', 'ctx.moveUp': 'Move up in queue', 'ctx.moveDown': 'Move down in queue',
+    'ctx.refresh': 'Refresh download address…', 'ctx.checksum': 'Verify checksum…', 'ctx.copy': 'Copy download address',
+    'common.cancel': 'Cancel', 'common.close': 'Close', 'common.save': 'Save', 'hint.optional': 'optional', 'hint.desktop': 'desktop',
+    'err.request': 'The request failed.',
+    'toast.failed': '{n} download(s) could not be processed.', 'toast.pickCompleted': 'Select a completed download.', 'toast.programShown': 'Program files are not run automatically. Their location is shown in the file manager.',
+    'toast.copied': 'Address copied.', 'toast.copyFailed': 'Could not copy.', 'toast.refreshed': 'Download address updated.', 'toast.queued': 'Added to the download queue.',
+    'confirm.title': 'Remove from list?', 'confirm.remove': 'Remove', 'confirm.running': 'Downloads that are running will be stopped.', 'confirm.keep': 'Files that are already complete stay on disk.',
+    'confirm.one': 'Remove "{name}" from the list?', 'confirm.many': 'Remove {n} downloads from the list?', 'confirm.completed': 'Remove {n} completed downloads from the list?',
+    'add.title': 'New download', 'add.sub': 'Paste a file link or a YouTube video.', 'add.single': 'Single URL', 'add.batch': 'Multiple URLs', 'add.url': 'Address (URL)', 'add.saveAs': 'Save as', 'add.autoName': 'Automatic from the server',
+    'add.perLine': 'One link per line', 'add.patterns': 'patterns supported: photo[001-120].jpg, part[a-f].zip', 'add.start': 'Start download', 'add.addN': 'Add {n} downloads', 'add.willAdd': '{n} links will be added.',
+    'add.rangeBig': 'The range {token} is too large or reversed.', 'add.rangeReversed': 'The range {token} is reversed.', 'add.tooMany': 'Too many links ({n}). The maximum is 1000 at a time.', 'add.needOne': 'Enter at least one link.',
+    'add.added': '{n} download(s) added', 'add.failedN': '{n} failed ({error})',
+    'yt.qualityAria': 'YouTube quality', 'yt.read': 'Read qualities', 'yt.readList': 'Read playlist', 'yt.reading': 'Reading…', 'yt.subs': 'Include subtitles (Indonesian/English, if available)', 'yt.playlistAll': 'Add every video in the playlist',
+    'yt.best': 'Best quality (MP4)', 'yt.limit': 'Resolution limit', 'yt.max': 'Up to {h}p (MP4)', 'yt.audioOnly': 'Audio only', 'yt.m4a': 'Audio M4A (original quality)', 'yt.mp3': 'Audio MP3', 'yt.thisVideo': 'Formats of this video',
+    'yt.playlistInfo': 'Playlist "{title}" has {n} videos. Each video is queued as a separate download using the quality chosen above.',
+    'refresh.title': 'Refresh download address', 'refresh.sub': 'Continue the download with a new link without starting over.', 'refresh.file': 'File', 'refresh.old': 'Old address',
+    'refresh.way1': '<b>Way 1 —</b> open the source page again in Chrome and click the link or <b>Download</b> button through ZIVAR. ZIVAR waits <b id="refresh-countdown">3:00</b> and uses the next link for this download.',
+    'refresh.way2': '<b>Way 2 —</b> paste the new link here:', 'refresh.use': 'Use this link', 'refresh.done': 'Address updated for {name}. The download continues.', 'refresh.timeout': 'Timed out. Paste a new link, or close this and try again.', 'refresh.updated': 'Address updated. The download continues.',
+    'checksum.title': 'Verify checksum', 'checksum.algorithm': 'Algorithm', 'checksum.run': 'Calculate', 'checksum.running': 'Calculating…', 'checksum.result': 'Result', 'checksum.clickRun': 'Click Calculate',
+    'checksum.compare': 'Compare with the value from the site', 'checksum.paste': 'Paste the checksum from the download page', 'checksum.copy': 'Copy result', 'checksum.copied': 'Checksum copied.',
+    'checksum.match': '✓ Match — the file is intact.', 'checksum.mismatch': '✗ No match — the file may be damaged or different.',
+    'about.tagline': 'Fast, local and private downloads', 'about.version': 'Version', 'about.platform': 'System', 'about.engine': 'Engine', 'about.extractor': 'YouTube extractor', 'about.developer': 'Developer', 'about.website': 'Website', 'about.license': 'License',
+    'update.title': 'Updates', 'update.check': 'Check for updates', 'update.download': 'Download and install', 'update.install': 'Install and restart', 'update.auto': 'Download updates automatically',
+    'update.idle': 'Check whether a newer version is available.', 'update.webOnly': 'Updates are available in the ZIVAR desktop app.', 'update.checkingText': 'Checking for updates…',
+    'update.checking': 'Checking', 'update.upToDateShort': 'Up to date', 'update.availableShort': 'Available', 'update.downloadingShort': 'Downloading', 'update.readyShort': 'Ready', 'update.errorShort': 'Error',
+    'update.unconfigured': 'No update address is set in this build. Download new versions from zivar.my.id.', 'update.upToDate': 'ZIVAR {v} is the latest version.',
+    'update.available': 'Version {v} is available (you have {current}).', 'update.downloading': 'Downloading version {v}… {p}%',
+    'update.ready': 'Version {v} is downloaded and verified. Install it now — ZIVAR will close, run the installer and start again.',
+    'update.readyPortable': 'Version {v} is downloaded and verified. ZIVAR will open the new portable version and close this one.',
+    'update.readyDmg': 'Version {v} is downloaded and verified. ZIVAR will open the disk image — drag the app to Applications.',
+    'update.readyPackage': 'Version {v} is downloaded and verified. ZIVAR will open the package in your software installer.',
+    'update.error': 'The update could not be completed.', 'update.unsupported': 'No update is published for this system yet.',
+    'grab.sub': 'Scan pages on the same domain and queue the files that are found.', 'grab.url': 'Page URL', 'grab.depth': 'Depth (0-3)', 'grab.max': 'Maximum files', 'grab.types': 'File types (optional)', 'grab.typesPh': 'video, image, document or .pdf,.zip',
+    'grab.run': 'Start scan', 'grab.scanning': 'Scanning the page…', 'grab.result': '{pages} pages read, {added} files queued, {skipped} skipped.', 'grab.toast': '{n} files added from Site Grabber.',
+    'set.title': 'Download settings', 'set.sub': 'Changes apply to new queue items and running downloads.', 'set.connections': 'Connections', 'set.concurrency': 'Simultaneous downloads', 'set.perFile': 'Connections per file',
+    'set.limit': 'Speed limit (KB/s, 0 = unlimited)', 'set.connNote': 'The number of connections applies to new downloads. YouTube does not use many connections because its servers slow them down.',
+    'set.files': 'Files & notifications', 'set.catFolders': 'Save into category subfolders (Video, Audio, Documents, …)', 'set.clipboard': 'Watch the clipboard and add copied URLs', 'set.notify': 'Show a notification when a download finishes or fails', 'set.afterAll': 'When all downloads finish',
+    'set.browser': 'Browser integration', 'set.types': 'Capture automatically by file type', 'set.typesNote': 'Separate extensions with commas, spaces or new lines. Leave empty to turn automatic capture off. Use <code>R0*</code> or <code>R1*</code> for multipart archives.',
+    'set.exclusions': 'Never capture from these sites', 'set.exclNote': 'One host per line or comma. <code>*.example.com</code> excludes that domain and its subdomains, and always wins over the extension list.',
+    'set.schedule': 'Scheduler', 'set.scheduleOn': 'Enable the queue schedule', 'set.startAt': 'Start at', 'set.endAt': 'Stop at', 'set.scheduleNote': 'Outside the schedule, active downloads are paused and resume automatically when it opens again.',
+    'set.network': 'Network', 'set.proxy': 'HTTP proxy', 'set.proxyHint': 'leave empty if not used', 'set.proxyNote': 'The proxy is used for all downloads, YouTube and HLS/DASH. Changes apply after ZIVAR restarts.', 'set.proxyActive': 'Active proxy: {proxy}. Changes apply after ZIVAR restarts.',
+    'set.system': 'System', 'set.autostart': 'Start ZIVAR when the computer starts (straight to the tray)', 'set.extractorWeekly': 'Check for YouTube extractor updates every week', 'set.updateNow': 'Update now',
+    'set.extractor': 'yt-dlp extractor {v}', 'set.extractorChecking': 'Extractor: checking version…', 'set.checking': 'checking…', 'set.extractorUpdating': 'Checking for extractor updates…', 'set.extractorDone': 'Check finished.',
+    'set.restartTitle': 'Restart ZIVAR?', 'set.restartAsk': 'The proxy changed. Restart ZIVAR now so the new proxy is used? Running downloads are paused and can be resumed afterwards.', 'set.restartYes': 'Restart', 'set.savedProxy': 'Settings saved. The proxy applies after ZIVAR restarts.', 'set.saved': 'Settings saved.',
+    'setup.title': 'Browser extension guide', 'setup.sub': 'Installing the extension is optional. Downloads from a URL work without it.', 'setup.connected': 'The browser extension is connected to the app.', 'setup.notConnected': 'No extension connection detected yet. Open the extension popup and click Connect.',
+    'setup.s1': 'Open the Chrome extensions page', 'setup.s1t': 'In Chrome, type <code>chrome://extensions</code> in the address bar. Turn on <b>Developer mode</b> at the top right.', 'setup.copyAddr': 'Copy Chrome address',
+    'setup.s2': 'Choose the ZIVAR extension folder', 'setup.s2t': 'Click <b>Load unpacked</b> in Chrome, then choose this folder.', 'setup.pathAria': 'Extension folder location', 'setup.openFolder': 'Open folder', 'setup.copyFolder': 'Copy location',
+    'setup.s3': 'Connect to the app', 'setup.s3t': 'Open the <b>ZIVAR Download Companion</b> icon in Chrome. Paste the pairing code, then click <b>Connect</b>.', 'setup.copyCode': 'Copy pairing code', 'setup.check': 'Check connection',
+    'setup.note': 'After a video starts playing, click Download video at the top right of the player. You can reopen this guide from Browser extension in the sidebar.', 'setup.later': 'Later', 'setup.finish': 'Done',
+    'setup.codeCopied': 'Pairing code copied. Paste it in the browser extension.', 'setup.codeFailed': 'Could not copy the pairing code. Try again.', 'setup.addrCopied': 'Address copied. Paste it in the Chrome address bar.',
+    'setup.folderCopied': 'Folder location copied.', 'setup.folderFailed': 'Could not copy the folder location.', 'setup.folderCopiedWeb': 'Folder location copied. Open it in your file manager.', 'setup.folderManual': 'Copy the folder location shown above.',
+  };
+  const id = {
+    'nav.add': 'Unduhan baru', 'nav.library': 'Pustaka', 'nav.all': 'Semua unduhan', 'nav.unfinished': 'Belum selesai', 'nav.queued': 'Antrean', 'nav.completed': 'Selesai',
+    'nav.categories': 'Kategori', 'nav.tools': 'Alat', 'nav.grabber': 'Site Grabber', 'nav.scheduler': 'Penjadwal', 'nav.extension': 'Ekstensi browser', 'nav.folder': 'Folder unduhan', 'nav.settings': 'Pengaturan',
+    'cat.video': 'Video', 'cat.audio': 'Musik', 'cat.image': 'Gambar', 'cat.document': 'Dokumen', 'cat.archive': 'Terkompresi', 'cat.program': 'Program', 'cat.other': 'Lainnya',
+    'theme.toggle': 'Ganti tema', 'about.open': 'Tentang ZIVAR',
+    'sort.label': 'Urutkan', 'sort.default': 'Terbaru dulu', 'sort.name': 'Nama', 'sort.size': 'Ukuran', 'sort.status': 'Status', 'sort.rate': 'Kecepatan', 'sort.last': 'Tanggal',
+    'search.placeholder': 'Cari nama file atau situs…', 'search.aria': 'Cari unduhan',
+    'menu.more': 'Lainnya', 'menu.afterAll': 'Setelah semua unduhan selesai', 'menu.selectAll': 'Pilih semua', 'menu.clearDone': 'Hapus yang selesai', 'menu.quit': 'Keluar dari ZIVAR', 'menu.quitNote': 'Tutup tab browser untuk keluar.',
+    'after.none': 'Tidak melakukan apa-apa', 'after.quit': 'Tutup ZIVAR', 'after.sleep': 'Sleep komputer', 'after.shutdown': 'Matikan komputer',
+    'after.sleepCountdown': 'Sleep komputer (hitung mundur 60 detik)', 'after.shutdownCountdown': 'Matikan komputer (hitung mundur 60 detik)',
+    'after.chip': 'Setelah selesai: {action}', 'after.noneToast': 'Tidak ada tindakan setelah unduhan selesai.', 'after.toast': 'Setelah semua unduhan selesai: {action}.',
+    'stat.speed': 'Kecepatan', 'stat.active': 'Aktif', 'stat.queued': 'Menunggu', 'stat.done': 'Selesai',
+    'act.resume': 'Lanjutkan', 'act.pause': 'Jeda', 'act.remove': 'Hapus', 'act.open': 'Buka', 'act.pauseAll': 'Jeda semua', 'act.resumeAll': 'Lanjutkan semua', 'act.clearDone': 'Hapus yang selesai',
+    'empty.title': 'Belum ada unduhan', 'empty.text': 'Klik <b>Unduhan baru</b> atau kirim tautan dari ekstensi browser.',
+    'status.connecting': 'Menghubungkan…', 'status.connected': 'Terhubung lokal', 'status.disconnected': 'Aplikasi terputus', 'status.web': 'Pengelola unduhan lokal', 'status.desktop': 'Pengelola unduhan desktop', 'status.folder': 'Folder: {path}',
+    'status.queued': 'Antrean', 'status.downloading': 'Mengunduh', 'status.pausing': 'Menjeda…', 'status.paused': 'Dijeda', 'status.assembling': 'Menyatukan…', 'status.completed': 'Selesai', 'status.cancelling': 'Membatalkan…', 'status.cancelled': 'Dibatalkan', 'status.error': 'Gagal',
+    'list.one': '{n} item', 'list.many': '{n} item', 'list.selected': '{n} dipilih',
+    'time.s': '{n} dtk', 'time.ms': '{m} mnt {s} dtk', 'time.hm': '{h} jam {m} mnt',
+    'job.viaChrome': '{host} · diunduh lewat Chrome', 'job.left': '{time} lagi',
+    'ctx.open': 'Buka file', 'ctx.show': 'Tampilkan di folder', 'ctx.cancel': 'Batalkan unduhan', 'ctx.remove': 'Hapus dari daftar', 'ctx.moveTop': 'Pindahkan ke awal antrean', 'ctx.moveUp': 'Naikkan di antrean', 'ctx.moveDown': 'Turunkan di antrean',
+    'ctx.refresh': 'Perbarui alamat unduhan…', 'ctx.checksum': 'Verifikasi checksum…', 'ctx.copy': 'Salin alamat unduhan',
+    'common.cancel': 'Batal', 'common.close': 'Tutup', 'common.save': 'Simpan', 'hint.optional': 'opsional', 'hint.desktop': 'desktop',
+    'err.request': 'Permintaan gagal.',
+    'toast.failed': '{n} unduhan tidak dapat diproses.', 'toast.pickCompleted': 'Pilih unduhan yang sudah selesai.', 'toast.programShown': 'File program tidak dijalankan otomatis. Lokasinya ditampilkan di file manager.',
+    'toast.copied': 'Alamat disalin.', 'toast.copyFailed': 'Tidak dapat menyalin.', 'toast.refreshed': 'Alamat unduhan diperbarui.', 'toast.queued': 'Ditambahkan ke antrean unduhan.',
+    'confirm.title': 'Hapus dari daftar?', 'confirm.remove': 'Hapus', 'confirm.running': 'Unduhan yang sedang berjalan akan dihentikan.', 'confirm.keep': 'File yang sudah selesai tetap tersimpan di disk.',
+    'confirm.one': 'Hapus "{name}" dari daftar?', 'confirm.many': 'Hapus {n} unduhan dari daftar?', 'confirm.completed': 'Hapus {n} unduhan yang sudah selesai dari daftar?',
+    'add.title': 'Unduhan baru', 'add.sub': 'Tempel tautan file atau video YouTube.', 'add.single': 'Satu URL', 'add.batch': 'Banyak URL', 'add.url': 'Alamat (URL)', 'add.saveAs': 'Simpan sebagai', 'add.autoName': 'Otomatis dari server',
+    'add.perLine': 'Satu tautan per baris', 'add.patterns': 'pola didukung: foto[001-120].jpg, bagian[a-f].zip', 'add.start': 'Mulai unduh', 'add.addN': 'Tambahkan {n} unduhan', 'add.willAdd': '{n} tautan akan ditambahkan.',
+    'add.rangeBig': 'Rentang {token} terlalu besar atau terbalik.', 'add.rangeReversed': 'Rentang {token} terbalik.', 'add.tooMany': 'Terlalu banyak tautan ({n}). Maksimal 1000 sekaligus.', 'add.needOne': 'Masukkan minimal satu tautan.',
+    'add.added': '{n} unduhan ditambahkan', 'add.failedN': '{n} gagal ({error})',
+    'yt.qualityAria': 'Kualitas YouTube', 'yt.read': 'Baca kualitas', 'yt.readList': 'Baca playlist', 'yt.reading': 'Membaca...', 'yt.subs': 'Sertakan subtitle (Indonesia/Inggris, jika tersedia)', 'yt.playlistAll': 'Tambahkan semua video di playlist',
+    'yt.best': 'Kualitas terbaik (MP4)', 'yt.limit': 'Batas resolusi', 'yt.max': 'Maksimal {h}p (MP4)', 'yt.audioOnly': 'Audio saja', 'yt.m4a': 'Audio M4A (kualitas asli)', 'yt.mp3': 'Audio MP3', 'yt.thisVideo': 'Format video ini',
+    'yt.playlistInfo': 'Playlist "{title}" berisi {n} video. Setiap video masuk antrean sebagai unduhan terpisah dengan pilihan kualitas di atas.',
+    'refresh.title': 'Perbarui alamat unduhan', 'refresh.sub': 'Lanjutkan unduhan dengan tautan baru tanpa mengulang dari awal.', 'refresh.file': 'File', 'refresh.old': 'Alamat lama',
+    'refresh.way1': '<b>Cara 1 —</b> buka lagi halaman sumbernya di Chrome dan klik tautan/tombol <b>Unduh</b> lewat ZIVAR. ZIVAR menunggu <b id="refresh-countdown">3:00</b> dan memakai tautan berikutnya untuk unduhan ini.',
+    'refresh.way2': '<b>Cara 2 —</b> tempel tautan baru di sini:', 'refresh.use': 'Gunakan tautan ini', 'refresh.done': 'Alamat diperbarui untuk {name}. Unduhan dilanjutkan.', 'refresh.timeout': 'Waktu tunggu habis. Tempel tautan baru, atau tutup lalu coba lagi.', 'refresh.updated': 'Alamat diperbarui. Unduhan dilanjutkan.',
+    'checksum.title': 'Verifikasi checksum', 'checksum.algorithm': 'Algoritma', 'checksum.run': 'Hitung', 'checksum.running': 'Menghitung…', 'checksum.result': 'Hasil', 'checksum.clickRun': 'Klik Hitung',
+    'checksum.compare': 'Bandingkan dengan nilai dari situs', 'checksum.paste': 'Tempel checksum dari halaman unduhan', 'checksum.copy': 'Salin hasil', 'checksum.copied': 'Checksum disalin.',
+    'checksum.match': '✓ Cocok — file utuh dan sesuai.', 'checksum.mismatch': '✗ Tidak cocok — file mungkin rusak atau berbeda.',
+    'about.tagline': 'Unduhan cepat, lokal, dan privat', 'about.version': 'Versi', 'about.platform': 'Sistem', 'about.engine': 'Mesin', 'about.extractor': 'Extractor YouTube', 'about.developer': 'Pengembang', 'about.website': 'Situs web', 'about.license': 'Lisensi',
+    'update.title': 'Pembaruan', 'update.check': 'Periksa pembaruan', 'update.download': 'Unduh dan pasang', 'update.install': 'Pasang dan mulai ulang', 'update.auto': 'Unduh pembaruan secara otomatis',
+    'update.idle': 'Periksa apakah ada versi yang lebih baru.', 'update.webOnly': 'Pembaruan tersedia di aplikasi desktop ZIVAR.', 'update.checkingText': 'Memeriksa pembaruan…',
+    'update.checking': 'Memeriksa', 'update.upToDateShort': 'Terbaru', 'update.availableShort': 'Tersedia', 'update.downloadingShort': 'Mengunduh', 'update.readyShort': 'Siap', 'update.errorShort': 'Galat',
+    'update.unconfigured': 'Alamat pembaruan belum diatur di build ini. Unduh versi baru dari zivar.my.id.', 'update.upToDate': 'ZIVAR {v} sudah versi terbaru.',
+    'update.available': 'Versi {v} tersedia (Anda memakai {current}).', 'update.downloading': 'Mengunduh versi {v}… {p}%',
+    'update.ready': 'Versi {v} sudah diunduh dan diverifikasi. Pasang sekarang — ZIVAR akan menutup, menjalankan installer, lalu terbuka kembali.',
+    'update.readyPortable': 'Versi {v} sudah diunduh dan diverifikasi. ZIVAR akan membuka versi portable yang baru dan menutup yang ini.',
+    'update.readyDmg': 'Versi {v} sudah diunduh dan diverifikasi. ZIVAR akan membuka disk image — seret aplikasinya ke Applications.',
+    'update.readyPackage': 'Versi {v} sudah diunduh dan diverifikasi. ZIVAR akan membuka paket di aplikasi pemasang perangkat lunak Anda.',
+    'update.error': 'Pembaruan tidak dapat diselesaikan.', 'update.unsupported': 'Belum ada pembaruan yang dipublikasikan untuk sistem ini.',
+    'grab.sub': 'Pindai halaman pada domain yang sama dan masukkan file yang ditemukan ke antrean.', 'grab.url': 'URL halaman', 'grab.depth': 'Kedalaman (0-3)', 'grab.max': 'Maksimal file', 'grab.types': 'Jenis file (opsional)', 'grab.typesPh': 'video, image, document atau .pdf,.zip',
+    'grab.run': 'Mulai scan', 'grab.scanning': 'Memindai halaman…', 'grab.result': '{pages} halaman dibaca, {added} file masuk antrean, {skipped} dilewati.', 'grab.toast': '{n} file ditambahkan dari Site Grabber.',
+    'set.title': 'Pengaturan unduhan', 'set.sub': 'Perubahan berlaku untuk antrean baru dan unduhan yang sedang berjalan.', 'set.connections': 'Koneksi', 'set.concurrency': 'Unduhan bersamaan', 'set.perFile': 'Koneksi per file',
+    'set.limit': 'Pembatas kecepatan (KB/s, 0 = tanpa batas)', 'set.connNote': 'Jumlah koneksi berlaku untuk unduhan baru. YouTube tidak memakai banyak koneksi karena justru diperlambat oleh servernya.',
+    'set.files': 'File & pemberitahuan', 'set.catFolders': 'Simpan ke subfolder kategori (Video, Audio, Dokumen, …)', 'set.clipboard': 'Pantau clipboard dan masukkan URL yang disalin', 'set.notify': 'Tampilkan notifikasi saat unduhan selesai atau gagal', 'set.afterAll': 'Setelah semua unduhan selesai',
+    'set.browser': 'Integrasi browser', 'set.types': 'Mulai otomatis berdasarkan jenis file', 'set.typesNote': 'Pisahkan ekstensi dengan koma, spasi, atau baris baru. Kosongkan untuk mematikan capture otomatis. Gunakan <code>R0*</code> atau <code>R1*</code> untuk arsip berseri.',
+    'set.exclusions': 'Jangan mulai otomatis dari situs berikut', 'set.exclNote': 'Satu host per baris atau koma. Pola <code>*.example.com</code> mengecualikan domain tersebut dan subdomainnya, serta selalu mengalahkan daftar ekstensi.',
+    'set.schedule': 'Penjadwal', 'set.scheduleOn': 'Aktifkan jadwal antrean', 'set.startAt': 'Mulai pada', 'set.endAt': 'Berhenti pada', 'set.scheduleNote': 'Di luar jadwal, unduhan aktif dijeda dan dilanjutkan otomatis saat jadwal dibuka kembali.',
+    'set.network': 'Jaringan', 'set.proxy': 'Proxy HTTP', 'set.proxyHint': 'kosongkan jika tidak dipakai', 'set.proxyNote': 'Proxy dipakai untuk semua unduhan, YouTube, dan HLS/DASH. Perubahan berlaku setelah ZIVAR dimulai ulang.', 'set.proxyActive': 'Proxy aktif: {proxy}. Perubahan berlaku setelah ZIVAR dimulai ulang.',
+    'set.system': 'Sistem', 'set.autostart': 'Jalankan ZIVAR saat sistem dinyalakan (langsung ke tray)', 'set.extractorWeekly': 'Periksa pembaruan extractor YouTube setiap minggu', 'set.updateNow': 'Perbarui sekarang',
+    'set.extractor': 'Extractor yt-dlp {v}', 'set.extractorChecking': 'Extractor: memeriksa versi…', 'set.checking': 'memeriksa…', 'set.extractorUpdating': 'Memeriksa pembaruan extractor…', 'set.extractorDone': 'Pemeriksaan selesai.',
+    'set.restartTitle': 'Mulai ulang ZIVAR?', 'set.restartAsk': 'Proxy berubah. Mulai ulang ZIVAR sekarang agar proxy baru dipakai? Unduhan yang berjalan dijeda dan bisa dilanjutkan setelahnya.', 'set.restartYes': 'Mulai ulang', 'set.savedProxy': 'Pengaturan disimpan. Proxy berlaku setelah ZIVAR dimulai ulang.', 'set.saved': 'Pengaturan disimpan.',
+    'setup.title': 'Panduan ekstensi browser', 'setup.sub': 'Pemasangan ekstensi bersifat opsional. Unduhan dari URL tetap bisa digunakan tanpa ekstensi.', 'setup.connected': 'Ekstensi browser sudah terhubung dengan aplikasi.', 'setup.notConnected': 'Belum ada koneksi ekstensi yang terdeteksi. Buka popup ekstensi dan klik Hubungkan.',
+    'setup.s1': 'Buka halaman ekstensi Chrome', 'setup.s1t': 'Di Chrome, ketik <code>chrome://extensions</code> pada bilah alamat. Aktifkan <b>Developer mode</b> di kanan atas.', 'setup.copyAddr': 'Salin alamat Chrome',
+    'setup.s2': 'Pilih folder ekstensi ZIVAR', 'setup.s2t': 'Klik <b>Load unpacked</b> di Chrome, lalu pilih folder berikut.', 'setup.pathAria': 'Lokasi folder ekstensi', 'setup.openFolder': 'Buka folder', 'setup.copyFolder': 'Salin lokasi',
+    'setup.s3': 'Hubungkan dengan aplikasi', 'setup.s3t': 'Buka ikon <b>ZIVAR Download Companion</b> di Chrome. Tempel kode pairing, lalu klik <b>Hubungkan</b>.', 'setup.copyCode': 'Salin kode pairing', 'setup.check': 'Periksa koneksi',
+    'setup.note': 'Setelah video diputar, klik Unduh video di kanan atas pemutar. Panduan ini dapat dibuka kembali dari Ekstensi browser di sidebar.', 'setup.later': 'Nanti', 'setup.finish': 'Selesai',
+    'setup.codeCopied': 'Kode pairing disalin. Tempel di ekstensi browser.', 'setup.codeFailed': 'Tidak dapat menyalin kode pairing. Coba kembali.', 'setup.addrCopied': 'Alamat disalin. Tempel di bilah alamat Chrome.',
+    'setup.folderCopied': 'Lokasi folder disalin.', 'setup.folderFailed': 'Tidak dapat menyalin lokasi folder.', 'setup.folderCopiedWeb': 'Lokasi folder disalin. Buka melalui file manager.', 'setup.folderManual': 'Salin lokasi folder yang ditampilkan di atas.',
+  };
+  const dictionaries = { en, id };
+  const supported = Object.keys(dictionaries);
+  let current = 'en';
+  try {
+    const saved = localStorage.getItem('zivar-lang');
+    if (supported.includes(saved)) current = saved;
+    else if (!saved && /^id\b/i.test(navigator.language || '') && false) current = 'id';
+  } catch {}
+  const format = (text, params) => params ? text.replace(/\{(\w+)\}/g, (match, name) => name in params ? String(params[name]) : match) : text;
+  const t = (key, params) => format(dictionaries[current][key] ?? en[key] ?? key, params);
+  function setLang(lang, persist = true) {
+    if (!supported.includes(lang)) return current;
+    current = lang;
+    if (persist) try { localStorage.setItem('zivar-lang', lang); } catch {}
+    return current;
+  }
+  function applyI18n(root = document) {
+    document.documentElement.lang = current;
+    for (const element of root.querySelectorAll('[data-i18n]')) element.textContent = t(element.dataset.i18n);
+    for (const element of root.querySelectorAll('[data-i18n-html]')) element.innerHTML = t(element.dataset.i18nHtml);
+    for (const element of root.querySelectorAll('[data-i18n-placeholder]')) element.placeholder = t(element.dataset.i18nPlaceholder);
+    for (const element of root.querySelectorAll('[data-i18n-title]')) element.title = t(element.dataset.i18nTitle);
+    for (const element of root.querySelectorAll('[data-i18n-aria]')) element.setAttribute('aria-label', t(element.dataset.i18nAria));
+  }
+  window.ZIVAR_I18N = { t, getLang: () => current, setLang, applyI18n, locale: () => current === 'id' ? 'id-ID' : 'en-US', dictionaries };
+})();

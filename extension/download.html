@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ZIVAR Download Info</title>
   <link rel="stylesheet" href="download.css">
-  <script src="download.js" defer></script>
+  <script src="i18n.js"></script><script src="download.js" defer></script>
 </head>
 <body>
   <main>
@@ -15,19 +15,19 @@
     </header>
 
     <section class="card" aria-labelledby="title">
-      <p class="eyebrow">Download baru terdeteksi</p>
-      <h1 id="title">Menyiapkan informasi file...</h1>
+      <p class="eyebrow" data-i18n="info.eyebrow">New download detected</p>
+      <h1 id="title" data-i18n="info.preparing">Preparing file information...</h1>
       <dl class="details">
-        <div><dt>Ukuran</dt><dd id="size">Memeriksa...</dd></div>
-        <div><dt>Jenis</dt><dd id="type">Memeriksa...</dd></div>
-        <div><dt>Sumber</dt><dd id="source">Memeriksa...</dd></div>
+        <div><dt data-i18n="info.size">Size</dt><dd id="size" data-i18n="info.checking">Checking...</dd></div>
+        <div><dt data-i18n="info.type">Type</dt><dd id="type" data-i18n="info.checking">Checking...</dd></div>
+        <div><dt data-i18n="info.source">Source</dt><dd id="source" data-i18n="info.checking">Checking...</dd></div>
       </dl>
       <p id="error" class="error" role="alert" hidden></p>
       <div class="actions">
-        <button id="start" class="primary" type="button" disabled>Mulai download</button>
-        <button id="browser" class="ghost" type="button" disabled>Lanjutkan di Chrome</button>
+        <button id="start" class="primary" type="button" disabled data-i18n="info.start">Start download</button>
+        <button id="browser" class="ghost" type="button" disabled data-i18n="info.browser">Continue in Chrome</button>
       </div>
-      <p class="note">Mulai download memasukkan file ke antrean ZIVAR. File tidak akan disimpan dua kali oleh Chrome.</p>
+      <p class="note" data-i18n="info.note">Start download adds the file to the ZIVAR queue. Chrome will not save it a second time.</p>
     </section>
   </main>
 </body>

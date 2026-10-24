@@ -14,8 +14,12 @@ const chrome = {
   action: {},
   alarms: { create() {}, onAlarm: { addListener() {} } }
 };
-const context = { chrome, fetch, URL, Map, Date, Set, Number, String, RegExp, Promise, AbortSignal, console };
+const context = { chrome, fetch, URL, Map, Date, Set, Number, String, RegExp, Promise, AbortSignal, console, importScripts() {} };
 vm.createContext(context);
+// background.js loads the shared dictionary with importScripts; load it the same way here.
+chrome.storage.onChanged = { addListener() {} };
+chrome.storage.local.get = async () => ({});
+vm.runInContext(await fs.readFile(new URL('../extension/i18n.js', import.meta.url), 'utf8'), context);
 vm.runInContext(`${source}\nglobalThis.__manifest = { hlsVariants, hlsMediaInfo, dashVariants, readManifest, browserDownloadTypeMatches, browserDownloadSiteExcluded };`, context);
 assert.equal(context.__manifest.browserDownloadTypeMatches({ filename: 'installer.exe', url: 'https://downloads.example/setup' }, ['EXE']), true);
 assert.equal(context.__manifest.browserDownloadTypeMatches({ filename: 'archive.r01', url: 'https://downloads.example/archive.r01' }, ['R0*', 'R1*']), true);

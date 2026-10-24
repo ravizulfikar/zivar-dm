@@ -62,7 +62,7 @@ try {
   const before = (await browserItems()).length;
   const info = await infoForClick('Archive');
   assert.equal((await browserItems()).length, before, 'Captured click must not create a native download');
-  await info.getByRole('button', { name: 'Mulai download' }).click();
+  await info.getByRole('button', { name: 'Start download' }).click();
   await until(() => app.manager.jobs.some(job => job.filename === 'archive.zip' && job.status === 'completed'));
   assert.deepEqual(await fs.readFile(app.manager.jobs.find(job => job.filename === 'archive.zip').outputPath), payload);
   console.log('PASS: captured click has zero Chrome downloads and queues byte-exact output.');
@@ -79,7 +79,7 @@ try {
   const item = (await browserItems()).find(item => item.id === id);
   assert.equal(item.state, 'interrupted');
   assert.equal(item.error, 'USER_CANCELED');
-  await redirectedInfo.getByRole('button', { name: 'Mulai download' }).click();
+  await redirectedInfo.getByRole('button', { name: 'Start download' }).click();
   await until(() => app.manager.jobs.some(job => job.filename === 'rustdesk-1.5.0-x86_64.exe' && job.status === 'completed'));
   assert.deepEqual(await fs.readFile(app.manager.jobs.find(job => job.filename === 'rustdesk-1.5.0-x86_64.exe').outputPath), payload);
   console.log('PASS: opaque redirect retains attachment filename; native item canceled; ZIVAR output matches source.');
@@ -95,7 +95,7 @@ try {
 
   await protocol.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: path.join(temporary, 'browser-downloads'), eventsEnabled: true });
   const browserInfo = await infoForClick('Browser');
-  await browserInfo.getByRole('button', { name: 'Lanjutkan di Chrome' }).click();
+  await browserInfo.getByRole('button', { name: 'Continue in Chrome' }).click();
   await until(async () => (await browserItems()).some(item => item.url === origin + '/browser.zip' && item.state === 'complete'));
   assert.equal(app.manager.jobs.some(job => job.url.endsWith('/browser.zip')), false);
   console.log('PASS: explicit browser choice finishes without recapture.');

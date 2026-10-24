@@ -18,11 +18,13 @@ if (!/^\d+\.\d+\.\d+$/.test(version || '') || !directory || !/^[\w.-]+\/[\w.-]+$
   process.exit(2);
 }
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const isInstaller = (os, name) => ({
-  win: name === `ZIVAR-Setup-${version}.exe`,
-  mac: name.endsWith('.dmg'),
-  linux: name.endsWith('.AppImage'),
-}[os]);
+// Each installer kind the app can update itself with. The key suffix tells the app which one to pick
+// for how it was installed (see desktop/updater.mjs): none = default, -portable, -deb, -rpm.
+const variantOf = (os, name) => ({
+  win: name === `ZIVAR-Setup-${version}.exe` ? '' : name === `ZIVAR-${version}-Portable.exe` ? '-portable' : null,
+  mac: name.endsWith('.dmg') ? '' : null,
+  linux: name.endsWith('.AppImage') ? '' : name.endsWith('.deb') ? '-deb' : name.endsWith('.rpm') ? '-rpm' : null,
+}[os] ?? null);
 const isPublished = name => /\.(exe|dmg|zip|AppImage|deb|rpm|gz)$/.test(name) && !name.endsWith('.blockmap');
 
 const sums = [], platforms = {};
@@ -33,8 +35,9 @@ for (const folder of (await fs.readdir(directory, { withFileTypes: true })).filt
     const file = path.join(directory, folder.name, name);
     const sha256 = crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex');
     sums.push(`${sha256}  ${name}`);
-    if (isInstaller(os, name)) {
-      const key = `${{ win: 'win32', mac: 'darwin', linux: 'linux' }[os]}-${arch}`;
+    const variant = variantOf(os, name);
+    if (variant !== null) {
+      const key = `${{ win: 'win32', mac: 'darwin', linux: 'linux' }[os]}-${arch}${variant}`;
       platforms[key] = { url: `https://github.com/${repository}/releases/download/v${version}/${encodeURIComponent(name)}`, sha256 };
     }
   }

@@ -16,10 +16,10 @@ try {
  // Record every overlay state so we can prove "not supported" never flashes while the extractor runs.
  await page.addInitScript(()=>{window.__zivarStates=[];setInterval(()=>{const s=document.querySelector('[data-zivar-video-panel]')?.dataset.zivarState;if(s&&window.__zivarStates.at(-1)!==s)window.__zivarStates.push(s);},50);});
  await page.goto('https://www.youtube.com/watch?v=Io0fBr1XBUA');
- await page.getByRole('button',{name:'ZIVAR sedang memeriksa video',exact:true}).waitFor({timeout:30000});
- await page.getByRole('button',{name:'Pilih media video ZIVAR',exact:true}).waitFor({timeout:180000});
+ await page.getByRole('button',{name:'ZIVAR is checking the video',exact:true}).waitFor({timeout:30000});
+ await page.getByRole('button',{name:'Choose ZIVAR video media',exact:true}).waitFor({timeout:180000});
  const states=await page.evaluate(()=>window.__zivarStates);assert.equal(states[0],'checking',states.join(','));assert.ok(!states.includes('unsupported'),states.join(','));
- await page.getByRole('button',{name:'Pilih media video ZIVAR',exact:true}).click();
+ await page.getByRole('button',{name:'Choose ZIVAR video media',exact:true}).click();
  const choice=page.getByRole('button').filter({hasText:'144p'});await choice.click();
 
  const deadline=Date.now()+180000;while(!app.manager.jobs.some(j=>['completed','error'].includes(j.status))){if(Date.now()>deadline)throw new Error('Download timeout');await new Promise(r=>setTimeout(r,500));}

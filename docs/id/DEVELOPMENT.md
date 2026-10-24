@@ -36,8 +36,8 @@ cd .tools/browser-test && node node_modules/playwright-core/cli.js install chrom
 
 Catatan: pada Chromium terbaru, Playwright mengambil alih penanganan download lewat DevTools sehingga
 `chrome.downloads.onDeterminingFilename` tidak terpanggil dan ekstensi tidak sempat mencegat download.
-`scripts/extension-smoke.mjs` dapat gagal di bagian itu pada versi Chromium tertentu. Jika terjadi, panggil
-`Browser.setDownloadBehavior` dengan `behavior: 'default'` lewat sesi CDP sebelum menguji pencegatan.
+`scripts/extension-smoke.mjs` lebih dulu memanggil `Browser.setDownloadBehavior` dengan `behavior: 'default'` lewat
+sesi CDP; lakukan hal yang sama pada tes baru yang menguji pencegatan download.
 Beberapa smoke test (`desktop-smoke`, `video-overlay-smoke`) bergantung pada waktu dan kadang perlu diulang.
 
 ## Helper yang dibundel
@@ -80,7 +80,11 @@ python scripts/create-app-icon.py "<path ke msedge.exe atau chrome>"
 tempat, `extension/background.js` dan `app/manager.mjs`; `tests/browser-rules.test.mjs` memastikan keduanya sama,
 jadi ubah keduanya sekaligus.
 
+## Bahasa
+
+Antarmuka berbahasa Inggris secara bawaan dengan terjemahan Indonesia. Teks berada di empat tempat yang harus selalu seiring: `app/public/i18n.js` (aplikasi), `extension/i18n.js` (ekstensi), `desktop/strings.mjs` (tray, notifikasi, dialog), dan `app/messages.mjs` (pesan mesin yang tampil ke pengguna). `tests/i18n.test.mjs` gagal jika ada kunci yang hilang di salah satu bahasa, kunci yang dipakai tidak ada, atau pesan mesin tanpa terjemahan Inggris.
+
 ## Gaya kode
 
-Ikuti gaya berkas di sekitarnya: ES module (`.mjs`), tanpa dependensi runtime tambahan, pesan antarmuka dalam
-bahasa Indonesia, komentar singkat yang menjelaskan alasan.
+Ikuti gaya berkas di sekitarnya: ES module (`.mjs`), tanpa dependensi runtime tambahan, teks antarmuka lewat
+kamus di atas (jangan ditulis langsung), komentar singkat yang menjelaskan alasan.

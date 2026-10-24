@@ -193,6 +193,8 @@ export class DownloadManager extends EventEmitter {
       afterAll: ['none', 'quit', 'sleep', 'shutdown'].includes(value.afterAll) ? value.afterAll : 'none',
       proxy: normalizeProxy(value.proxy),
       autoUpdateExtractor: value.autoUpdateExtractor === undefined ? true : Boolean(value.autoUpdateExtractor),
+      autoUpdate: value.autoUpdate === undefined ? true : Boolean(value.autoUpdate),
+      language: ['en', 'id'].includes(value.language) ? value.language : 'en',
       browserDownloadTypes: normalizeBrowserDownloadTypes(value.browserDownloadTypes),
       browserDownloadSiteExclusions: normalizeBrowserDownloadSiteExclusions(value.browserDownloadSiteExclusions),
     };

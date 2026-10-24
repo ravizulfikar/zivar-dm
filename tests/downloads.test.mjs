@@ -239,7 +239,10 @@ test('browser job API needs the pairing token and accepts raw binary chunks', as
   await call(`/api/browser-jobs/${created.id}/finish`, { body: '{}' });
   await until(() => app.manager.jobs[0].status === 'completed');
   assert.deepEqual(await fs.readFile(app.manager.jobs[0].outputPath), bytes);
-  assert.equal((await (await call('/api/browser-jobs', { body: JSON.stringify({ parts: [{ key: 'evil', url: 'https://x.example/' }] }) })).json()).error, 'Jenis file unduhan browser tidak valid.');
+  const bad = async () => (await (await call('/api/browser-jobs', { body: JSON.stringify({ parts: [{ key: 'evil', url: 'https://x.example/' }] }) })).json()).error;
+  assert.equal(await bad(), 'The browser download file type is invalid.', 'English is the default language');
+  await call('/api/settings', { body: JSON.stringify({ language: 'id' }) });
+  assert.equal(await bad(), 'Jenis file unduhan browser tidak valid.', 'Indonesian messages come through untouched');
 });
 
 test('settings control simultaneous downloads; queue order can be changed with move', async t => {

@@ -29,7 +29,10 @@
 
 ---
 
-> **Note:** the application interface is currently in Indonesian. The documentation is available in English and Indonesian.
+<p align="center">
+  <img src="docs/assets/screenshot-dark.png" alt="ZIVAR in the dark theme" width="49%">
+  <img src="docs/assets/screenshot-light.png" alt="ZIVAR in the light theme" width="49%">
+</p>
 
 ## Features
 
@@ -41,6 +44,8 @@
 - Add many URLs at once, including patterns such as `photo[001-120].jpg`, plus a **Site Grabber** that collects files from a page.
 - Clipboard monitor, desktop notifications, and an action to run when all downloads finish (quit, sleep, shut down).
 - Lives in the system tray and can start automatically at login.
+- A clean sidebar-and-cards interface with light and dark themes, in **English** (default) or **Indonesian** with one click.
+- In-app updates: check, download, verify the checksum and install from the About dialog; updates can also download automatically.
 
 **Video**
 - YouTube through yt-dlp: choose a resolution, audio only (M4A/MP3), subtitles, or a whole playlist. The extractor can update itself every week.
@@ -96,13 +101,15 @@ The extension ships inside the app and is copied to the data folder the first ti
 
 ## Updates
 
-ZIVAR can check for updates from a JSON feed. Every GitHub release includes a `latest.json` covering Windows, macOS and Linux. Set `zivar.updateFeed` in `package.json` (or the `ZIVAR_UPDATE_FEED` environment variable) to its HTTPS address:
+Open **About** (the version button at the bottom of the sidebar) and click **Check for updates**. ZIVAR downloads the right file for how it was installed (installer, portable, DMG, AppImage, `.deb` or `.rpm`), checks its SHA-256 checksum, and installs it when you click **Install and restart**. Leave **Download updates automatically** on and the download starts by itself; installing is always your click.
+
+Updates come from the `latest.json` file attached to every GitHub release:
 
 ```
 https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json
 ```
 
-The installer address must use HTTPS and come with a SHA-256 checksum; a downloaded installer is never run automatically.
+Change it with `zivar.updateFeed` in `package.json` or the `ZIVAR_UPDATE_FEED` environment variable. The installer address must use HTTPS and come with a SHA-256 checksum.
 
 ## Development
 

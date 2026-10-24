@@ -13,4 +13,7 @@ contextBridge.exposeInMainWorld('zivarDesktop', Object.freeze({
   relaunch: () => ipcRenderer.invoke('zivar:relaunch'),
   checkUpdate: () => ipcRenderer.invoke('zivar:check-update'),
   downloadUpdate: () => ipcRenderer.invoke('zivar:download-update'),
+  installUpdate: () => ipcRenderer.invoke('zivar:install-update'),
+  updateState: () => ipcRenderer.invoke('zivar:update-state'),
+  openExternal: url => ipcRenderer.invoke('zivar:open-external', url),
 }));

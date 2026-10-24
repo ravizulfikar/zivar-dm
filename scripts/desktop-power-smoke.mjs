@@ -26,12 +26,12 @@ const base = `http://127.0.0.1:${source.address().port}`;
 const env = { ...process.env, ZIVAR_UPDATE_FEED: `http://127.0.0.1:${source.address().port}/latest.json`, ZIVAR_PORT: '0', ZIVAR_DESKTOP_DATA_DIR: path.join(temporary, 'state'), ZIVAR_DESKTOP_DOWNLOAD_DIR: path.join(temporary, 'downloads'), ZIVAR_DESKTOP_TEST_MODE: '1', ZIVAR_TEST_POWER_LOG: powerLog };
 delete env.ELECTRON_RUN_AS_NODE;
 const logText = () => fs.readFile(powerLog, 'utf8').catch(() => '');
-const until = async (predicate, ms = 20000) => { const start = Date.now(); while (!await predicate()) { if (Date.now() - start > ms) throw new Error('Timed out'); await new Promise(r => setTimeout(r, 100)); } };
+const until = async (predicate, ms = 20000) => { const start = Date.now(); while (!await predicate()) { if (Date.now() - start > ms) throw new Error('Timed out. Power log: ' + JSON.stringify(await logText())); await new Promise(r => setTimeout(r, 100)); } };
 let desktop;
 try {
   desktop = await electron.launch({ executablePath: process.env.ZIVAR_DESKTOP_EXE || path.join(project, 'node_modules/electron/dist/electron.exe'), args: process.env.ZIVAR_DESKTOP_EXE ? [] : [project], cwd: project, env, timeout: 60000 });
   const page = await desktop.firstWindow();
-  await page.locator('#connection').filter({ hasText: 'Terhubung lokal' }).waitFor();
+  await page.locator('#connection').filter({ hasText: 'Connected locally' }).waitFor();
   await page.locator('#setup-later').click();
   const api = (route, body) => page.evaluate(async ([route, body]) => {
     const token = document.querySelector('meta[name="pairing-token"]').content;
@@ -42,16 +42,23 @@ try {
   assert.equal(await page.locator('[data-after="shutdown"]').count(), 1);
 
   // App update: newer version found, installer downloaded through the queue and verified.
-  await page.locator('.menu-trigger', { hasText: 'Bantuan' }).click();
-  await page.getByRole('menuitem', { name: 'Periksa pembaruan…' }).click();
-  await page.locator('#update-text').filter({ hasText: 'Versi 99.0.0 tersedia' }).waitFor();
+  await page.locator('#about-open').click();
+  await page.locator('#update-check').click();
+  await page.locator('#update-text').filter({ hasText: 'Version 99.0.0 is available' }).waitFor();
   await page.locator('#update-download').click();
   await until(async () => (await api('/api/state')).jobs.some(job => job.filename === 'ZIVAR-Setup-99.0.0.exe' && job.status === 'completed' && job.verified));
+  // Downloaded and verified: the user can install with one click (the installer is recorded, not started, in tests).
+  await page.locator('#update-install').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#update-dot').isVisible(), true, 'A ready update is flagged next to the version');
+  await page.locator('#update-install').click();
+  await until(async () => (await logText()).includes('install:setup:ZIVAR-Setup-99.0.0.exe'));
+  await page.locator('#about-close').click();
   // A tampered installer (wrong checksum in the feed) is rejected and deleted.
   feedHash = '0'.repeat(64);
   await api('/api/downloads/' + (await api('/api/state')).jobs.find(job => job.filename === 'ZIVAR-Setup-99.0.0.exe').id + '/remove', {});
+  await page.evaluate(() => window.zivarDesktop.checkUpdate());
   await page.evaluate(() => window.zivarDesktop.downloadUpdate());
-  await until(async () => (await api('/api/state')).jobs.some(job => job.filename.startsWith('ZIVAR-Setup-99.0.0') && job.status === 'error' && /Checksum/.test(job.error)));
+  await until(async () => (await api('/api/state')).jobs.some(job => job.filename.startsWith('ZIVAR-Setup-99.0.0') && job.status === 'error' && /checksum/i.test(job.error)));
   assert.equal((await api('/api/state')).jobs.find(job => job.status === 'error').outputPath, null, 'A file with the wrong checksum must be deleted');
   assert.equal(await page.evaluate(() => window.zivarDesktop.setAutoStart(true)), true);
   await until(async () => (await logText()).includes('autostart:true'));
@@ -60,7 +67,7 @@ try {
   await api('/api/downloads', { url: `${base}/first.zip` });
   await until(async () => (await logText()).includes('after-all:shutdown'));
   const log = await logText();
-  assert.match(log, /notify:Unduhan selesai:first\.zip/);
+  assert.match(log, /notify:Download complete:first\.zip/);
   assert.equal((await api('/api/settings')).afterAll, 'none', '"After all" is one-shot and resets itself');
 
   // "Close ZIVAR" when done really exits the app.

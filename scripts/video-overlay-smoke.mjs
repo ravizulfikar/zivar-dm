@@ -60,7 +60,9 @@ try {
   const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
   const id = new URL(worker.url()).host;
   const generator = await context.newPage();
-  videoBytes = Buffer.from(await generator.evaluate(async () => {
+  await generator.bringToFront(); // a background tab throttles the canvas recorder and yields an empty video
+  // Recording a canvas in headless Chromium occasionally yields an empty file; retry a few times.
+  const recordVideo = () => generator.evaluate(async () => {
     const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 180;
     document.body.append(canvas);
     const drawing = canvas.getContext('2d', { alpha: false }), stream = canvas.captureStream(30), chunks = [];
@@ -72,11 +74,12 @@ try {
     const paint = () => { drawing.fillStyle = '#e5e9ee'; drawing.fillRect(0, 0, 320, 180); drawing.fillStyle = '#245b91'; drawing.fillRect(15 + frame++ % 20 * 6, 65, 100, 50); track.requestFrame?.(); };
     paint(); recorder.start(); const timer = setInterval(paint, 40); await new Promise(resolve => setTimeout(resolve, 1500)); recorder.stop();
     const bytes = await result; clearInterval(timer); stream.getTracks().forEach(track => track.stop()); return bytes;
-  }));
+  });
+  for (let attempt = 0; attempt < 4 && videoBytes.length <= 1000; attempt++) videoBytes = Buffer.from(await recordVideo());
   assert.ok(videoBytes.length > 1000); await fs.writeFile(path.join(project, 'artifacts', 'overlay-fixture.webm'), videoBytes); await generator.close();
   const popup = await context.newPage(); await popup.goto(`chrome-extension://${id}/popup.html`);
-  await popup.locator('#token').fill(app.token); await popup.getByRole('button', { name: 'Hubungkan', exact: true }).click();
-  await popup.locator('#status').filter({ hasText: 'Terhubung ke aplikasi lokal' }).waitFor();
+  await popup.locator('#token').fill(app.token); await popup.getByRole('button', { name: 'Connect', exact: true }).click();
+  await popup.locator('#status').filter({ hasText: 'Connected to the local app' }).waitFor();
   const page = await context.newPage(); await page.goto(origin + '/page');
   await page.locator('video').evaluate(async video => { await video.play(); });
   await page.waitForFunction(() => document.querySelector('video').currentTime > 0);
@@ -111,8 +114,8 @@ try {
     video.pause(); video.removeAttribute('src'); video.replaceChildren(...['/media.webm', '/other.webm'].map(url => { const source = document.createElement('source'); source.src = url; return source; })); video.load(); await video.play();
   });
   await page.locator('[data-zivar-video-panel][data-zivar-state="ready"]').waitFor();
-  await page.waitForFunction(() => document.querySelector('[data-zivar-video-panel]')?.shadowRoot?.querySelector('button[data-action="download"]')?.textContent === 'Pilih kualitas');
-  await primary(page).click(); await panel(page).getByText('Unduh semua (2)', { exact: false }).waitFor();
+  await page.waitForFunction(() => document.querySelector('[data-zivar-video-panel]')?.shadowRoot?.querySelector('button[data-action="download"]')?.textContent === 'Choose quality');
+  await primary(page).click(); await panel(page).getByText('Download all (2)', { exact: false }).waitFor();
   await page.mouse.click(20, 20);
   await page.reload(); await page.locator('video').evaluate(video => video.play());
   await page.locator('[data-zivar-video-panel][data-zivar-state="ready"]').waitFor();
@@ -120,15 +123,15 @@ try {
   const unknown = await context.newPage(); await unknown.goto(origin + '/unknown'); await blobPlay(unknown);
   await unknown.locator('[data-zivar-video-panel][data-zivar-state="unsupported"]').waitFor();
   const beforeUnsupported = app.manager.jobs.length; await primary(unknown).click();
-  await panel(unknown).getByText('URL video langsung belum ditemukan.', { exact: false }).waitFor(); assert.equal(app.manager.jobs.length, beforeUnsupported);
+  await panel(unknown).getByText('No direct video URL found yet.', { exact: false }).waitFor(); assert.equal(app.manager.jobs.length, beforeUnsupported);
   await unknown.evaluate(() => fetch('/playlist'));
-  await panel(unknown).getByText('Varian kualitas terdeteksi.', { exact: false }).waitFor();
+  await panel(unknown).getByText('Quality variants detected.', { exact: false }).waitFor();
   // The menu is still open from the click above; clicking again would close it.
   await panel(unknown).getByText('v720.m3u8', { exact: false }).waitFor(); assert.equal(app.manager.jobs.length, beforeUnsupported);
   await context.route('https://www.youtube.com/**', route => route.fulfill({ contentType: 'text/html', body: blankHtml }));
   const youtube = await context.newPage(); await youtube.goto('https://www.youtube.com/zivar-local-test'); await blobPlay(youtube);
   await youtube.locator('[data-zivar-video-panel][data-zivar-state="unsupported"]').waitFor();
-  await primary(youtube).click(); await panel(youtube).getByText('URL video langsung belum ditemukan.', { exact: false }).waitFor(); assert.equal(app.manager.jobs.length, beforeUnsupported);
+  await primary(youtube).click(); await panel(youtube).getByText('No direct video URL found yet.', { exact: false }).waitFor(); assert.equal(app.manager.jobs.length, beforeUnsupported);
 
   // A CDN that refuses ZIVAR but serves Chrome: the extension downloads it through the browser.
   const browserOnly = await context.newPage(); await browserOnly.goto(origin + '/browser-only-page');
@@ -174,7 +177,7 @@ try {
 
   await app.close(); await page.bringToFront(); await page.locator('video').scrollIntoViewIfNeeded(); await primary(page).click();
   const offlineChoice = panel(page).locator('button.media:not(.all)').first(); if (await offlineChoice.isVisible().catch(() => false)) await offlineChoice.click();
-  await page.getByText('Aplikasi lokal belum terhubung.', { exact: false }).waitFor();
+  await page.getByText('The local app is not connected.', { exact: false }).waitFor();
   console.log('PASS: real video playback, overlay under strict CSP, one-click exact download, synthetic-click rejection, scroll/hide, iframe association/referrer, dynamic players, honest blob/non-video-page limits, ad players ignored, browser-only CDN downloaded through Chrome, encrypted HLS through Chrome, offline error.');
 } finally {
   await context?.close(); await app.close(); source.closeAllConnections(); await new Promise(resolve => source.close(resolve));

@@ -1,7 +1,9 @@
-# Panduan instal
+# Install guide
 
-Unduh file yang sesuai dari halaman [Releases](../../../releases/latest). Setiap rilis menyertakan
-`SHA256SUMS.txt`; cocokkan sebelum membuka file.
+[Bahasa Indonesia](id/INSTALL.md)
+
+Download the right file from the [Releases](https://github.com/ravizulfikar/zivar-dm/releases/latest) page. Every release includes
+`SHA256SUMS.txt`; compare it before opening a file.
 
 ```bash
 # Linux / macOS
@@ -16,90 +18,90 @@ Get-FileHash .\ZIVAR-Setup-0.17.0.exe -Algorithm SHA256
 
 ## Windows 10/11
 
-- **Installer** (`ZIVAR-Setup-<versi>.exe`): pilih folder instalasi, shortcut dibuat otomatis. Data pengguna tetap tersimpan saat uninstall.
-- **Portable** (`ZIVAR-<versi>-Portable.exe`): jalankan langsung, tidak perlu instalasi.
+- **Installer** (`ZIVAR-Setup-<version>.exe`): choose an install folder; shortcuts are created automatically. User data is kept when you uninstall.
+- **Portable** (`ZIVAR-<version>-Portable.exe`): run it directly, no installation needed.
 
-Jika SmartScreen menampilkan peringatan, klik **More info → Run anyway**. Build belum ditandatangani.
+If SmartScreen shows a warning, click **More info → Run anyway**. Builds are not code-signed yet.
 
-## macOS 12 atau lebih baru
+## macOS 12 or newer
 
-1. Buka `ZIVAR-<versi>-mac-arm64.dmg` (Apple Silicon) atau `-mac-x64.dmg` (Intel).
-2. Seret **ZIVAR Download Manager** ke **Applications**.
-3. Saat pertama kali dibuka macOS dapat menolak karena aplikasi belum dinotarisasi. Klik kanan aplikasi → **Open** → **Open**, atau:
+1. Open `ZIVAR-<version>-mac-arm64.dmg` (Apple Silicon) or `-mac-x64.dmg` (Intel).
+2. Drag **ZIVAR Download Manager** to **Applications**.
+3. On first launch macOS may refuse because the app is not notarized. Right-click the app → **Open** → **Open**, or run:
 
    ```bash
    xattr -dr com.apple.quarantine "/Applications/ZIVAR Download Manager.app"
    ```
 
-Arsip `.zip` berisi aplikasi yang sama tanpa DMG.
+The `.zip` archive contains the same app without the DMG.
 
 ## Ubuntu, Debian, Linux Mint, Pop!_OS
 
 ```bash
-sudo apt install ./ZIVAR-<versi>-linux-amd64.deb     # x64
-sudo apt install ./ZIVAR-<versi>-linux-arm64.deb     # arm64 (Raspberry Pi OS 64-bit, dsb.)
+sudo apt install ./ZIVAR-<version>-linux-amd64.deb     # x64
+sudo apt install ./ZIVAR-<version>-linux-arm64.deb     # arm64 (64-bit Raspberry Pi OS, ...)
 ```
 
-Aplikasi muncul di menu **Internet/Network** dan dipasang di `/opt/ZIVAR Download Manager`.
-Hapus dengan `sudo apt remove zivar-download-manager`.
+The app appears in the **Internet/Network** menu and is installed in `/opt/ZIVAR Download Manager`.
+Remove it with `sudo apt remove zivar-download-manager`.
 
 ## Fedora, RHEL, openSUSE
 
 ```bash
-sudo dnf install ./ZIVAR-<versi>-linux-x86_64.rpm      # Fedora, RHEL
-sudo zypper install ./ZIVAR-<versi>-linux-x86_64.rpm   # openSUSE
+sudo dnf install ./ZIVAR-<version>-linux-x86_64.rpm      # Fedora, RHEL
+sudo zypper install ./ZIVAR-<version>-linux-x86_64.rpm   # openSUSE
 ```
 
-## Distro lain (Arch, Manjaro, Alpine glibc, dll.)
+## Other distributions (Arch, Manjaro, ...)
 
 **AppImage**
 
 ```bash
-chmod +x ZIVAR-<versi>-linux-x86_64.AppImage
-./ZIVAR-<versi>-linux-x86_64.AppImage
+chmod +x ZIVAR-<version>-linux-x86_64.AppImage
+./ZIVAR-<version>-linux-x86_64.AppImage
 ```
 
-**Arsip tar.gz**
+**tar.gz archive**
 
 ```bash
-tar -xzf ZIVAR-<versi>-linux-x64.tar.gz
-# jalankan berkas "zivar-download-manager" di dalam folder hasil ekstrak
+tar -xzf ZIVAR-<version>-linux-x64.tar.gz
+# run the "zivar-download-manager" file inside the extracted folder
 ```
 
-## Memasang ekstensi browser
+## Installing the browser extension
 
-Lihat bagian **Memasang ekstensi browser** di [README](../README.md). Folder ekstensi ada di:
+See **Installing the browser extension** in the [README](../README.md). The extension folder is at:
 
-| Sistem | Lokasi |
+| System | Location |
 | --- | --- |
 | Windows | `%APPDATA%\ZIVAR Download Manager\browser-extension` |
 | macOS | `~/Library/Application Support/ZIVAR Download Manager/browser-extension` |
 | Linux | `~/.config/ZIVAR Download Manager/browser-extension` |
 
-Menu tray **Folder ekstensi Chrome** membuka folder itu langsung.
+The tray menu item **Folder ekstensi Chrome** opens that folder directly.
 
-## Lokasi data
+## Data location
 
-Antrean, pengaturan, token pairing, dan log (`desktop.log`) tersimpan di folder data aplikasi
-(induk dari folder ekstensi di atas). File unduhan secara bawaan masuk ke `Downloads/ZIVAR`.
+The queue, settings, pairing token and log (`desktop.log`) are stored in the app data folder
+(the parent of the extension folder above). Downloaded files go to `Downloads/ZIVAR` by default.
 
-## Pemecahan masalah
+## Troubleshooting
 
-**Linux: AppImage tidak mau jalan di Ubuntu 24.04 (error sandbox).**
-Ubuntu 24.04 membatasi user namespace. Jalankan dengan `./ZIVAR-...AppImage --no-sandbox`,
-atau pasang paket `.deb` yang mengatur sandbox helper dengan benar.
+**Linux: the AppImage will not start on Ubuntu 24.04 (sandbox error).**
+Ubuntu 24.04 restricts unprivileged user namespaces. Run `./ZIVAR-...AppImage --no-sandbox`,
+or install the `.deb` package, which sets up the sandbox helper correctly.
 
-**Linux: AppImage meminta FUSE.**
-Pasang `libfuse2` (`sudo apt install libfuse2t64` di Ubuntu 24.04) atau jalankan dengan
+**Linux: the AppImage asks for FUSE.**
+Install `libfuse2` (`sudo apt install libfuse2t64` on Ubuntu 24.04) or run it with
 `--appimage-extract-and-run`.
 
-**Linux: ikon tray tidak muncul di GNOME.**
-GNOME tidak menampilkan ikon tray bawaan. Pasang ekstensi *AppIndicator and KStatusNotifierItem Support*.
-Menutup jendela tetap menyembunyikan aplikasi ke latar belakang; buka lagi lewat menu aplikasi.
+**Linux: no tray icon on GNOME.**
+GNOME does not show tray icons by default. Install the *AppIndicator and KStatusNotifierItem Support* extension.
+Closing the window still hides the app to the background; reopen it from the application menu.
 
-**Port 18765 sedang dipakai.**
-Tutup aplikasi lain yang memakai port itu. Ekstensi browser selalu menghubungi `127.0.0.1:18765`,
-jadi port ini tidak dapat diganti selama Anda memakai ekstensi.
+**Port 18765 is already in use.**
+Close the other application using it. The browser extension always connects to `127.0.0.1:18765`,
+so the port cannot be changed while you use the extension.
 
-**Unduhan YouTube gagal.**
-Buka **Pengaturan** dan jalankan pembaruan extractor, atau biarkan pembaruan mingguan otomatis aktif.
+**YouTube downloads fail.**
+Open **Settings** and run the extractor update, or leave the weekly automatic update turned on.

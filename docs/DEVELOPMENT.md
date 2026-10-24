@@ -1,84 +1,86 @@
-# Pengembangan
+# Development
 
-## Kebutuhan
+[Bahasa Indonesia](id/DEVELOPMENT.md)
 
-- Node.js 24 atau lebih baru
+## Requirements
+
+- Node.js 24 or newer
 - Git
-- Untuk membangun installer: platform target itu sendiri (Windows untuk `.exe`, macOS untuk `.dmg`, Linux untuk `.deb`/`.rpm`/`.AppImage`). Lintas-platform ditangani GitHub Actions, lihat [RELEASING.md](RELEASING.md).
+- To build installers: the target platform itself (Windows for `.exe`, macOS for `.dmg`, Linux for `.deb`/`.rpm`/`.AppImage`). Cross-platform builds are handled by GitHub Actions, see [RELEASING.md](RELEASING.md).
 
-## Menjalankan
+## Running
 
 ```bash
 npm ci
-npm start           # Electron: jendela, tray, notifikasi
-npm run start:web   # server + UI saja, http://127.0.0.1:18765
+npm start           # Electron: window, tray, notifications
+npm run start:web   # server + UI only, http://127.0.0.1:18765
 ```
 
-Data lokal pengembangan (`.data/`, `downloads/`) tidak masuk git. Setel `ZIVAR_DESKTOP_DATA_DIR` dan
-`ZIVAR_DESKTOP_DOWNLOAD_DIR` untuk memakai folder lain.
+Local development data (`.data/`, `downloads/`) is not tracked by git. Set `ZIVAR_DESKTOP_DATA_DIR` and
+`ZIVAR_DESKTOP_DOWNLOAD_DIR` to use other folders.
 
-## Pengujian
+## Testing
 
 ```bash
-npm test                          # unit test: node --test tests/*.test.mjs
-node scripts/<nama>-smoke.mjs     # smoke test dengan browser/Electron sungguhan
+npm test                          # unit tests: node --test tests/*.test.mjs
+node scripts/<name>-smoke.mjs     # smoke tests with a real browser/Electron
 ```
 
-Smoke test membuka Chromium, Electron, atau Firefox sungguhan dan menyimpan keluaran di `artifacts/`.
-Sebagian dirancang untuk Windows. Persiapan sekali saja:
+Smoke tests open a real Chromium, Electron or Firefox and write their output to `artifacts/`.
+Some are written for Windows. One-time setup:
 
 ```bash
-node node_modules/electron/install.js                           # binary Electron
+node node_modules/electron/install.js                           # Electron binary
 cd .tools/browser-test && node node_modules/playwright-core/cli.js install chromium
 ```
 
-Catatan: pada Chromium terbaru, Playwright mengambil alih penanganan download lewat DevTools sehingga
-`chrome.downloads.onDeterminingFilename` tidak terpanggil dan ekstensi tidak sempat mencegat download.
-`scripts/extension-smoke.mjs` dapat gagal di bagian itu pada versi Chromium tertentu. Jika terjadi, panggil
-`Browser.setDownloadBehavior` dengan `behavior: 'default'` lewat sesi CDP sebelum menguji pencegatan.
-Beberapa smoke test (`desktop-smoke`, `video-overlay-smoke`) bergantung pada waktu dan kadang perlu diulang.
+Note: on recent Chromium versions Playwright takes over download handling through DevTools, so
+`chrome.downloads.onDeterminingFilename` never fires and the extension cannot intercept the download.
+`scripts/extension-smoke.mjs` may fail at that step on some Chromium versions. If it does, send
+`Browser.setDownloadBehavior` with `behavior: 'default'` over a CDP session before testing interception.
+A few smoke tests (`desktop-smoke`, `video-overlay-smoke`) are timing-sensitive and sometimes need a rerun.
 
-## Helper yang dibundel
+## Bundled helpers
 
-Installer membawa yt-dlp, runtime Node untuk yt-dlp, dan FFmpeg di folder `resources`.
+Installers ship yt-dlp, a Node runtime for yt-dlp and FFmpeg in the `resources` folder.
 
-- **Windows:** `node scripts/ensure-vendor-binaries.mjs` (dipanggil otomatis oleh `npm run build:win`) mengunduh versi yang dipatok dan memeriksa hash-nya.
-- **macOS dan Linux:** `build/fetch-vendor.mjs` mengambil rilis terbaru yt-dlp, runtime Node yang sama dengan Node Anda, dan FFmpeg dari `ffmpeg-static`:
+- **Windows:** `node scripts/ensure-vendor-binaries.mjs` (called by `npm run build:win`) downloads pinned versions and checks their hashes.
+- **macOS and Linux:** `build/fetch-vendor.mjs` fetches the latest yt-dlp release, the Node runtime matching your own Node, and FFmpeg from `ffmpeg-static`:
 
 ```bash
 npm install --no-save ffmpeg-static
-node build/fetch-vendor.mjs        # tambahkan --force untuk mengunduh ulang
+node build/fetch-vendor.mjs        # add --force to download again
 ```
 
-Skrip memverifikasi SHA-256 yt-dlp dan Node. Variabel `ZIVAR_FFMPEG_PATH` (path absolut) menimpa lokasi FFmpeg.
+The script verifies the SHA-256 of yt-dlp and Node. `ZIVAR_FFMPEG_PATH` (an absolute path) overrides the FFmpeg location.
 
-## Membangun installer
+## Building installers
 
 ```bash
 npm run build:win
-npm run build:mac     # di macOS
-npm run build:linux   # di Linux
+npm run build:mac     # on macOS
+npm run build:linux   # on Linux
 ```
 
-Hasil ada di `dist/`. Konfigurasi: [build/electron-builder.yml](../build/electron-builder.yml).
+Output goes to `dist/`. Configuration: [build/electron-builder.yml](../build/electron-builder.yml).
 
-## Ikon dan logo
+## Icons and logo
 
-Sumber logo: [docs/assets/logo.svg](assets/logo.svg). Dari sana dibuat `desktop/assets/app.{png,ico,icns}`,
-`app-1024.png`, dan `extension/icon-*.png`. Untuk membuat ulang semuanya setelah mengubah SVG:
+The logo source is [docs/assets/logo.svg](assets/logo.svg). From it `desktop/assets/app.{png,ico,icns}`,
+`app-1024.png` and `extension/icon-*.png` are generated. To regenerate everything after editing the SVG:
 
 ```bash
 pip install pillow
-python scripts/create-app-icon.py "<path ke msedge.exe atau chrome>"
+python scripts/create-app-icon.py "<path to msedge.exe or chrome>"
 ```
 
-## Ekstensi browser
+## Browser extension
 
-`extension/` dapat dimuat langsung lewat **Load unpacked**. Daftar tipe file dan situs bawaan ada di dua
-tempat, `extension/background.js` dan `app/manager.mjs`; `tests/browser-rules.test.mjs` memastikan keduanya sama,
-jadi ubah keduanya sekaligus.
+`extension/` can be loaded directly with **Load unpacked**. The default file-type and site lists live in two
+places, `extension/background.js` and `app/manager.mjs`; `tests/browser-rules.test.mjs` checks that they match,
+so change both together.
 
-## Gaya kode
+## Code style
 
-Ikuti gaya berkas di sekitarnya: ES module (`.mjs`), tanpa dependensi runtime tambahan, pesan antarmuka dalam
-bahasa Indonesia, komentar singkat yang menjelaskan alasan.
+Follow the surrounding files: ES modules (`.mjs`), no extra runtime dependencies, user-facing messages in
+Indonesian, short comments that explain why.

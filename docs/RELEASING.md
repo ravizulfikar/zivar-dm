@@ -1,54 +1,56 @@
-# Membuat rilis
+# Releasing
 
-Rilis dibuat oleh [.github/workflows/release.yml](../.github/workflows/release.yml) saat sebuah tag `v*` di-push.
+[Bahasa Indonesia](id/RELEASING.md)
 
-## Langkah
+Releases are created by [.github/workflows/release.yml](../.github/workflows/release.yml) when a `v*` tag is pushed.
 
-1. Naikkan versi di **tiga tempat** yang harus sama:
+## Steps
+
+1. Bump the version in **three places** that must match:
    - `package.json` (`version`)
    - `extension/manifest.json` (`version`)
-   - `CHANGELOG.md`: tambahkan bagian `## [x.y.z] - YYYY-MM-DD` di atas bagian sebelumnya.
-2. Jalankan `npm test` dan commit.
-3. Buat dan kirim tag:
+   - `CHANGELOG.md`: add a `## [x.y.z] - YYYY-MM-DD` section above the previous one.
+2. Run `npm test` and commit.
+3. Create and push the tag:
 
    ```bash
    git tag v0.17.0
    git push origin main v0.17.0
    ```
 
-4. Workflow berjalan:
+4. The workflow runs:
 
-   | Tahap | Isi |
+   | Stage | What it does |
    | --- | --- |
-   | `test` | `npm test` di Windows, dan memeriksa tag = versi `package.json` = versi manifest = ada di CHANGELOG |
-   | `build` | Windows x64, macOS arm64 dan x64, Linux x64 dan arm64; helper diunduh dengan `build/fetch-vendor.mjs` |
-   | `publish` | Membuat `SHA256SUMS.txt`, `latest.json`, catatan rilis dari CHANGELOG, lalu GitHub Release |
+   | `test` | `npm test` on Windows, and checks tag = `package.json` version = manifest version = present in the CHANGELOG |
+   | `build` | Windows x64, macOS arm64 and x64, Linux x64 and arm64; helpers come from `scripts/ensure-vendor-binaries.mjs` (Windows) or `build/fetch-vendor.mjs` |
+   | `publish` | Creates `SHA256SUMS.txt`, `latest.json`, release notes from the CHANGELOG, then the GitHub Release |
 
-   Tag berformat `v0.18.0-beta.1` dipublikasikan sebagai pre-release.
+   Tags such as `v0.18.0-beta.1` are published as pre-releases.
 
-Menjalankan workflow lewat **Actions → Release → Run workflow** hanya membangun dan menyimpan artefak, tanpa membuat rilis.
+Running the workflow from **Actions → Release → Run workflow** only builds and stores the artifacts, without creating a release.
 
-## Berkas dalam satu rilis
+## Files in a release
 
-| Platform | Berkas |
+| Platform | Files |
 | --- | --- |
 | Windows x64 | `ZIVAR-Setup-<v>.exe`, `ZIVAR-<v>-Portable.exe` |
 | macOS | `ZIVAR-<v>-mac-arm64.dmg` / `.zip`, `ZIVAR-<v>-mac-x64.dmg` / `.zip` |
-| Linux x64 dan arm64 | `.AppImage`, `.deb`, `.rpm`, `.tar.gz` |
-| Semua | `SHA256SUMS.txt`, `latest.json` |
+| Linux x64 and arm64 | `.AppImage`, `.deb`, `.rpm`, `.tar.gz` |
+| All | `SHA256SUMS.txt`, `latest.json` |
 
-## Pembaruan dalam aplikasi
+## In-app updates
 
-`latest.json` memuat satu installer per platform (`win32-x64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`)
-dengan SHA-256-nya. Arahkan `zivar.updateFeed` di `package.json` ke
-`https://github.com/<pemilik>/<repo>/releases/latest/download/latest.json` agar aplikasi memeriksanya.
+`latest.json` lists one installer per platform (`win32-x64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`)
+with its SHA-256. Point `zivar.updateFeed` in `package.json` at
+`https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json` so the app checks it.
 
-## Penandatanganan (belum diatur)
+## Code signing (not set up yet)
 
-Build saat ini tidak ditandatangani. Untuk menambahkannya:
+Builds are currently unsigned. To add signing:
 
-- **Windows**: sertifikat code signing lewat `CSC_LINK` dan `CSC_KEY_PASSWORD`.
-- **macOS**: Apple Developer ID, hapus `identity: null` di konfigurasi, tambahkan `CSC_LINK`/`CSC_KEY_PASSWORD`
-  dan notarisasi (`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`).
+- **Windows**: a code-signing certificate through `CSC_LINK` and `CSC_KEY_PASSWORD`.
+- **macOS**: an Apple Developer ID; remove `identity: null` from the configuration, add `CSC_LINK`/`CSC_KEY_PASSWORD`
+  and notarization (`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`).
 
-Simpan semuanya sebagai GitHub Actions secrets, jangan di repositori.
+Store all of them as GitHub Actions secrets, never in the repository.

@@ -4,6 +4,18 @@
 
 All notable changes to ZIVAR Download Manager are recorded in this file.
 
+## [0.19.0] - 2026-10-25
+
+### Changed
+
+- The interface goes back to a desktop layout: a menu bar (Tasks, File, Downloads, View, Help), a toolbar, a category list and a download grid with sortable columns, instead of the dashboard with cards. It keeps the fresh colours, the dark and light themes and the status badges and progress bars.
+- Language and theme moved to where a desktop app keeps them: View → Language and View → Light/Dark theme, plus small EN/ID and theme buttons in the status bar. About and updates are under Help and the version button.
+- The speed readout and graph sit at the bottom of the category list.
+
+### Removed
+
+- The summary tiles, the sort drop-down and the per-card buttons; sorting is done by clicking a column header and actions are on the toolbar, the menus and the right-click menu.
+
 ## [0.18.1] - 2026-10-25
 
 ### Fixed

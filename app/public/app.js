@@ -61,40 +61,26 @@ function view(job, queueIndex) {
   const description = job.error || (job.kind === 'browser' ? t('job.viaChrome', { host }) : job.kind === 'youtube' ? `${host} · YouTube` : media ? `${job.manifestType || 'Stream'} ${job.mediaWidth && job.mediaHeight ? `${job.mediaWidth}x${job.mediaHeight}` : ''}`.trim() : host);
   const tooltip = [description, job.outputPath].filter(Boolean).join('\n');
   const primary = job.status === 'completed' ? 'open' : PAUSABLE.includes(job.status) ? 'pause' : RESUMABLE.includes(job.status) ? 'resume' : null;
-  return { tooltip, name: job.filename, category: CATEGORY_ICONS.includes(job.category) ? job.category : 'other', q: job.status === 'queued' ? `#${queueIndex}` : '', size, status: job.status, label, percent, running, left, rate: job.status === 'downloading' && job.speed > 0 ? `${bytes(job.speed)}/s` : '', last: job.status === 'completed' ? when(job.completedAt || job.createdAt) : '', description, error: Boolean(job.error), primary, completed: job.status === 'completed', lang: getLang() };
+  return { tooltip, name: job.filename, category: CATEGORY_ICONS.includes(job.category) ? job.category : 'other', q: job.status === 'queued' ? String(queueIndex) : '', size, status: job.status, label, percent, running, left, rate: job.status === 'downloading' && job.speed > 0 ? `${bytes(job.speed)}/s` : '', last: when(job.completedAt || job.createdAt), description, error: Boolean(job.error), primary, completed: job.status === 'completed', lang: getLang() };
 }
-const ACTION_ICONS = { pause: 'i-pause', resume: 'i-play', open: 'i-external' };
 function createRow(job) {
-  const element = node('div', 'job'); element.dataset.id = job.id; element.tabIndex = -1; element.setAttribute('role', 'option'); element.setAttribute('aria-selected', 'false');
-  const icon = node('span', 'job-icon');
-  const main = node('div', 'job-main'), title = node('div', 'job-title'), name = node('span', 'job-name'), badge = node('span', 'badge');
-  title.append(name, badge);
-  const meta = node('div', 'job-meta'), size = node('span', 'meta-size'), q = node('span', 'meta-q'), rate = node('span', 'meta-rate'), left = node('span', 'meta-left'), last = node('span', 'meta-last'), desc = node('span', 'meta-desc');
-  meta.append(size, q, rate, left, last, desc);
-  const progress = node('div', 'progress'), bar = node('span'); progress.append(bar);
-  main.append(title, meta, progress);
-  const actions = node('div', 'job-actions');
-  const button = (kind, iconId, className = '') => { const b = node('button', className); b.type = 'button'; b.dataset.jobAction = kind; b.append(svgUse('', iconId)); return b; };
-  const primary = button('primary', 'i-play', 'primary-action'), show = button('show', 'i-folder'), remove = button('remove', 'i-x'), more = button('more', 'i-more');
-  actions.append(primary, show, remove, more);
-  element.append(icon, main, actions);
-  return { element, signature: '', refs: { icon, name, badge, size, q, rate, left, last, desc, bar, primary, show, remove, more, title } };
+  const tr = node('tr', 'job'); tr.dataset.id = job.id; tr.tabIndex = -1; tr.setAttribute('aria-selected', 'false');
+  const name = node('td'); const nameBox = node('div', 'c-name'); name.append(nameBox);
+  const status = node('td'); const wrap = node('div', 'status-wrap'); const progress = node('div', 'progress'); progress.append(node('span')); wrap.append(node('span', 'badge'), progress); status.append(wrap);
+  tr.append(name, node('td', 'cell-q'), node('td', 'cell-size'), status, node('td', 'cell-left'), node('td', 'cell-rate'), node('td', 'cell-last'), node('td', 'cell-desc'));
+  return { element: tr, signature: '' };
 }
 function updateRow(row, data) {
   const signature = JSON.stringify(data); if (row.signature === signature) return; row.signature = signature;
-  const r = row.refs;
-  r.icon.className = `job-icon c-${data.category}`; r.icon.replaceChildren(svgUse('', `t-${data.category}`));
-  r.name.textContent = data.name; r.name.title = [data.name, data.tooltip].join('\n');
-  r.badge.className = `badge ${data.status}`; r.badge.textContent = data.label;
-  r.size.textContent = data.size; r.q.textContent = data.q; r.rate.textContent = data.rate;
-  r.left.textContent = data.left ? t('job.left', { time: data.left }) : ''; r.last.textContent = data.last;
-  r.desc.textContent = data.description; r.desc.title = data.tooltip; r.desc.classList.toggle('error-text', data.error);
-  r.bar.style.width = `${data.percent}%`;
-  row.element.classList.toggle('running', data.running || data.status === 'paused' && data.percent > 0);
-  r.primary.hidden = !data.primary;
-  if (data.primary) { r.primary.firstChild.firstChild.setAttribute('href', `#${ACTION_ICONS[data.primary]}`); r.primary.title = r.primary.ariaLabel = t(`act.${data.primary}`); }
-  r.show.hidden = !data.completed; r.show.title = r.show.ariaLabel = t('ctx.show');
-  r.remove.title = r.remove.ariaLabel = t('act.remove'); r.more.title = r.more.ariaLabel = t('menu.more');
+  const tr = row.element, cells = tr.children;
+  const icon = node('span', `job-icon c-${data.category}`); icon.append(svgUse('', `t-${data.category}`));
+  cells[0].firstChild.replaceChildren(icon, node('span', '', data.name)); cells[0].title = [data.name, data.tooltip].join('\n');
+  cells[1].textContent = data.q; cells[2].textContent = data.size;
+  const badge = cells[3].querySelector('.badge'); badge.className = `badge ${data.status}`; badge.textContent = data.label;
+  cells[3].querySelector('.progress > span').style.width = `${data.percent}%`;
+  tr.classList.toggle('running', data.running || data.status === 'paused' && data.percent > 0);
+  cells[4].textContent = data.left; cells[5].textContent = data.rate; cells[6].textContent = data.last;
+  cells[7].textContent = data.description; cells[7].title = data.tooltip; cells[7].classList.toggle('error-text', data.error);
 }
 
 // ---------- rendering ----------
@@ -106,7 +92,6 @@ function sorted(list) {
   const value = job => sort.key === 'name' ? job.filename.toLowerCase() : sort.key === 'size' ? (job.total || job.received || 0) : sort.key === 'status' ? job.status : sort.key === 'rate' ? (job.speed || 0) : Date.parse(job.completedAt || job.createdAt) || 0;
   return [...list].sort((a, b) => { const x = value(a), y = value(b); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; });
 }
-const viewTitle = () => t(filter.startsWith('category:') ? `cat.${filter.slice(9)}` : `nav.${filter}`);
 function render() {
   const { jobs } = state;
   const queueOrder = jobs.filter(job => job.status === 'queued').reverse().map(job => job.id);
@@ -117,7 +102,7 @@ function render() {
   $('#after-all-status').hidden = after === 'none'; $('#after-all-status').textContent = after === 'none' ? '' : t('after.chip', { action: t(`after.${after}`) });
   for (const item of $$('[data-after]')) item.setAttribute('aria-checked', String(item.dataset.after === after));
   const active = jobs.filter(job => RUNNING.includes(job.status)).length, completed = jobs.filter(job => job.status === 'completed').length;
-  $('#active').textContent = active; $('#stat-queued').textContent = queueOrder.length; $('#stat-done').textContent = completed;
+  $('#active').textContent = active;
   const count = (id, value) => { const element = $(`#count-${id}`); if (element) element.textContent = value; };
   count('all', jobs.length); count('completed', completed);
   count('unfinished', jobs.filter(job => !['completed', 'cancelled'].includes(job.status)).length); count('queued', queueOrder.length);
@@ -127,7 +112,6 @@ function render() {
   const connected = Boolean(state.browserIntegration?.connected);
   $('#setup-status').textContent = connected ? t('setup.connected') : t('setup.notConnected');
   $('#setup-status').classList.toggle('connected', connected);
-  $('#view-title').textContent = viewTitle();
 
   const shown = sorted(jobs.filter(matches)), container = $('#jobs'), visible = new Set(shown.map(job => job.id));
   for (const id of [...selection]) if (!visible.has(id)) selection.delete(id);
@@ -150,7 +134,7 @@ function render() {
 function drawSpeed(value) {
   const now = Date.now();
   if (!speedSamples.length || now - speedSamples.at(-1).time >= 1000) { speedSamples.push({ time: now, value }); if (speedSamples.length > 60) speedSamples.shift(); }
-  const canvas = $('#speed-graph'), context = canvas.getContext('2d'), ratio = window.devicePixelRatio || 1, width = 120, height = 28;
+  const canvas = $('#speed-graph'), context = canvas.getContext('2d'), ratio = window.devicePixelRatio || 1, width = 120, height = 36;
   if (canvas.width !== width * ratio) { canvas.width = width * ratio; canvas.height = height * ratio; }
   context.setTransform(ratio, 0, 0, ratio, 0, 0); context.clearRect(0, 0, width, height);
   const peak = Math.max(1, ...speedSamples.map(sample => sample.value));
@@ -188,18 +172,8 @@ $('#jobs').addEventListener('mousedown', event => {
   if (event.button === 2 && selection.has(row.dataset.id)) return;
   select(row.dataset.id, { toggle: event.ctrlKey || event.metaKey, range: event.shiftKey });
 });
-$('#jobs').addEventListener('click', event => {
-  const button = event.target.closest('button[data-job-action]'); if (!button) return;
-  const id = button.closest('.job').dataset.id, job = jobById(id); if (!job) return;
-  if (!selection.has(id)) select(id);
-  const action = button.dataset.jobAction;
-  if (action === 'primary') defaultAction(job, true);
-  else if (action === 'show') run('show-file');
-  else if (action === 'remove') run('remove');
-  else if (action === 'more') { const box = button.getBoundingClientRect(); openContextMenu(box.right, box.bottom); }
-});
-$('#jobs').addEventListener('dblclick', event => { if (event.target.closest('button')) return; const row = event.target.closest('.job[data-id]'); if (row) defaultAction(jobById(row.dataset.id)); });
-$('#list-wrap').addEventListener('mousedown', event => { if (!event.target.closest('.job[data-id]') && state) { selection.clear(); render(); } });
+$('#jobs').addEventListener('dblclick', event => { const row = event.target.closest('.job[data-id]'); if (row) defaultAction(jobById(row.dataset.id)); });
+$('#list-wrap').addEventListener('mousedown', event => { if (!event.target.closest('.job[data-id]') && !event.target.closest('thead') && state) { selection.clear(); render(); } });
 $('#list-wrap').addEventListener('keydown', event => {
   const ids = shownIds(); if (!ids.length) return;
   const current = ids.indexOf(anchorId);
@@ -210,11 +184,10 @@ $('#list-wrap').addEventListener('keydown', event => {
   } else if (event.key === 'Delete') { event.preventDefault(); run('remove'); }
   else if (event.key === 'Enter') { event.preventDefault(); defaultAction(jobById(anchorId)); }
 });
-function defaultAction(job, toggleRunning = false) {
+function defaultAction(job) {
   if (!job) return;
   if (job.status === 'completed') run('open-file');
   else if (RESUMABLE.includes(job.status)) run('resume');
-  else if (toggleRunning && PAUSABLE.includes(job.status)) run('pause');
 }
 
 // ---------- commands ----------
@@ -277,9 +250,12 @@ const commands = {
   grabber: () => $('#grabber-dialog').showModal(),
   setup: () => $('#setup-dialog').showModal(),
   about: () => openAbout(),
+  'check-update': async () => { await openAbout(); if (desktop && !$('#update-check').hidden && !$('#update-check').disabled) $('#update-check').click(); },
+  theme: () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'),
+  sidebar: () => { document.body.classList.toggle('no-sidebar'); applyViewLabels(); },
   quit: () => desktop?.quit(),
 };
-function run(name) { closeMenus(); if (!state && !['add', 'settings', 'scheduler', 'grabber', 'setup', 'about', 'quit', 'folder'].includes(name)) return; return commands[name]?.(); }
+function run(name) { closeMenus(); if (!state && !['add', 'settings', 'scheduler', 'grabber', 'setup', 'about', 'check-update', 'theme', 'sidebar', 'quit', 'folder'].includes(name)) return; return commands[name]?.(); }
 function updateCommands() {
   const jobs = selectedJobs(), all = state?.jobs || [];
   const enabled = {
@@ -307,6 +283,7 @@ for (const trigger of $$('.menu-trigger')) {
     event.stopPropagation(); const open = trigger.getAttribute('aria-expanded') === 'true';
     closeMenus(); if (!open) { updateCommands(); trigger.setAttribute('aria-expanded', 'true'); trigger.nextElementSibling.hidden = false; }
   });
+  trigger.addEventListener('mouseenter', () => { if ($$('.menu-trigger').some(item => item !== trigger && item.getAttribute('aria-expanded') === 'true')) trigger.click(); });
 }
 document.addEventListener('mousedown', event => { if (!event.target.closest('.menu') && !event.target.closest('#context-menu')) closeMenus(); });
 function openContextMenu(x, y) {
@@ -332,13 +309,28 @@ const filterNodes = $$('[data-filter]');
 function selectFilter(element) {
   filter = element.dataset.filter;
   for (const item of filterNodes) item.classList.toggle('selected', item === element);
-  if (state) render(); else $('#view-title').textContent = viewTitle();
+  if (state) render();
 }
 for (const element of filterNodes) element.addEventListener('click', () => selectFilter(element));
-$('#sort').addEventListener('change', () => { const key = $('#sort').value || null; sort = key ? { key, dir: SORT_DEFAULTS[key] } : { key: null, dir: 1 }; if (state) render(); });
+function sortBy(header) {
+  sort = sort.key === header.dataset.sort ? (sort.dir === SORT_DEFAULTS[header.dataset.sort] ? { key: header.dataset.sort, dir: -SORT_DEFAULTS[header.dataset.sort] } : { key: null, dir: 1 }) : { key: header.dataset.sort, dir: SORT_DEFAULTS[header.dataset.sort] };
+  for (const item of $$('th[data-sort]')) item.setAttribute('aria-sort', item === header && sort.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none');
+  if (state) render();
+}
+for (const header of $$('th[data-sort]')) {
+  header.tabIndex = 0;
+  header.addEventListener('click', () => sortBy(header));
+  header.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); sortBy(header); } });
+}
+function applyViewLabels() {
+  const light = document.documentElement.dataset.theme === 'light';
+  $('#theme-item').textContent = t(light ? 'theme.dark' : 'theme.light');
+  $('#sidebar-item').textContent = t(document.body.classList.contains('no-sidebar') ? 'menu.showSidebar' : 'menu.hideSidebar');
+}
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   $('#theme-toggle').firstChild.firstChild.setAttribute('href', theme === 'light' ? '#i-moon' : '#i-sun');
+  applyViewLabels();
   try { localStorage.setItem('zivar-theme', theme); } catch {}
 }
 {
@@ -348,9 +340,9 @@ function setTheme(theme) {
 $('#theme-toggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'));
 function applyLanguage() {
   applyI18n();
-  for (const button of $$('#lang-switch [data-lang]')) button.setAttribute('aria-pressed', String(button.dataset.lang === getLang()));
+  for (const button of $$('[data-lang]')) button.setAttribute(button.closest('.menu-pop') ? 'aria-checked' : 'aria-pressed', String(button.dataset.lang === getLang()));
   $('#edition-label').textContent = t(desktop ? 'status.desktop' : 'status.web');
-  $('#view-title').textContent = viewTitle();
+  applyViewLabels();
   resetYoutube(youtubeFormats); updateYoutubeBox(); updateBatchPreview();
   fillExtractorText();
   for (const row of rows.values()) row.signature = '';
@@ -369,8 +361,8 @@ function syncLanguage() {
   }
   if (explicit && explicit === getLang() && serverLanguage !== explicit) api('/api/settings', { method: 'POST', body: JSON.stringify({ language: explicit }) }).catch(() => {});
 }
-for (const button of $$('#lang-switch [data-lang]')) button.addEventListener('click', () => {
-  setLang(button.dataset.lang, true); applyLanguage();
+for (const button of $$('[data-lang]')) button.addEventListener('click', () => {
+  closeMenus(); setLang(button.dataset.lang, true); applyLanguage();
   api('/api/settings', { method: 'POST', body: JSON.stringify({ language: button.dataset.lang }) }).catch(() => {});
 });
 

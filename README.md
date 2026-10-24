@@ -44,7 +44,7 @@
 - Add many URLs at once, including patterns such as `photo[001-120].jpg`, plus a **Site Grabber** that collects files from a page.
 - Clipboard monitor, desktop notifications, and an action to run when all downloads finish (quit, sleep, shut down).
 - Lives in the system tray and can start automatically at login.
-- A clean sidebar-and-cards interface with light and dark themes, in **English** (default) or **Indonesian** with one click.
+- A desktop-style interface (menu bar, toolbar, category list and download grid) with light and dark themes, in **English** (default) or **Indonesian** with one click.
 - In-app updates: check, download, verify the checksum and install from the About dialog; updates can also download automatically.
 
 **Video**
@@ -101,7 +101,7 @@ The extension ships inside the app and is copied to the data folder the first ti
 
 ## Updates
 
-Open **About** (the version button at the bottom of the sidebar) and click **Check for updates**. ZIVAR downloads the right file for how it was installed (installer, portable, DMG, AppImage, `.deb` or `.rpm`), checks its SHA-256 checksum, and installs it when you click **Install and restart**. Leave **Download updates automatically** on and the download starts by itself; installing is always your click.
+Open **About** (the version button at the right of the status bar, or **Help → About**) and click **Check for updates**. ZIVAR downloads the right file for how it was installed (installer, portable, DMG, AppImage, `.deb` or `.rpm`), checks its SHA-256 checksum, and installs it when you click **Install and restart**. Leave **Download updates automatically** on and the download starts by itself; installing is always your click.
 
 Updates come from the `latest.json` file attached to every GitHub release:
 

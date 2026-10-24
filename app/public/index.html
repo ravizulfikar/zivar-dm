@@ -47,111 +47,127 @@
   </svg>
 
   <div class="app">
-    <aside class="sidebar" aria-label="Navigation">
-      <div class="brand">
-        <img class="brand-logo" src="/logo.svg" alt="" width="40" height="40">
-        <div class="brand-text"><strong>ZIVAR</strong><span>Download Manager</span></div>
-      </div>
+    <nav class="menubar" aria-label="Main menu">
+      <div class="menu"><button class="menu-trigger" id="menu-tasks" aria-haspopup="true" aria-expanded="false" data-i18n="menu.tasks">Tasks</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="add"><span data-i18n="menu.addUrl">Add URL…</span><kbd>Ins</kbd></button>
+          <button role="menuitem" data-command="grabber" data-i18n="menu.grabber">Site Grabber…</button>
+          <hr><button role="menuitem" id="quit-app" data-command="quit" hidden data-i18n="menu.quit">Quit ZIVAR</button>
+          <span class="menu-note" id="quit-note" data-i18n="menu.quitNote">Close the browser tab to quit.</span>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="menu.file">File</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="open-file"><span data-i18n="ctx.open">Open file</span><kbd>Enter</kbd></button>
+          <button role="menuitem" data-command="show-file" data-i18n="ctx.show">Show in folder</button>
+          <button role="menuitem" data-command="folder" data-i18n="menu.openFolder">Open download folder</button>
+          <hr><button role="menuitem" data-command="copy-url" data-i18n="ctx.copy">Copy download address</button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="menu.downloads">Downloads</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="resume" data-i18n="act.resume">Resume</button>
+          <button role="menuitem" data-command="pause" data-i18n="act.pause">Pause</button>
+          <button role="menuitem" data-command="cancel" data-i18n="ctx.cancel">Cancel download</button>
+          <button role="menuitem" data-command="remove"><span data-i18n="ctx.remove">Remove from list</span><kbd>Del</kbd></button>
+          <button role="menuitem" data-command="refresh-address" data-i18n="ctx.refresh">Refresh download address…</button>
+          <button role="menuitem" data-command="checksum" data-i18n="ctx.checksum">Verify checksum…</button>
+          <hr><button role="menuitem" data-command="move-top" data-i18n="ctx.moveTop">Move to front of queue</button>
+          <button role="menuitem" data-command="move-up"><span data-i18n="ctx.moveUp">Move up in queue</span><kbd>Ctrl+↑</kbd></button>
+          <button role="menuitem" data-command="move-down"><span data-i18n="ctx.moveDown">Move down in queue</span><kbd>Ctrl+↓</kbd></button>
+          <hr><button role="menuitem" data-command="resume-all" data-i18n="act.resumeAll">Resume all</button>
+          <button role="menuitem" data-command="pause-all" data-i18n="act.pauseAll">Pause all</button>
+          <button role="menuitem" data-command="remove-completed" data-i18n="act.clearDone">Clear completed</button>
+          <hr><span class="menu-label" data-i18n="menu.afterAll">When all downloads finish</span>
+          <button role="menuitemradio" data-after="none" aria-checked="true" data-i18n="after.none">Do nothing</button>
+          <button role="menuitemradio" data-after="quit" aria-checked="false" data-i18n="after.quit">Close ZIVAR</button>
+          <button role="menuitemradio" data-after="sleep" aria-checked="false" class="desktop-only" data-i18n="after.sleep">Sleep computer</button>
+          <button role="menuitemradio" data-after="shutdown" aria-checked="false" class="desktop-only" data-i18n="after.shutdown">Shut down computer</button>
+          <hr><button role="menuitem" data-command="scheduler" data-i18n="menu.scheduler">Scheduler…</button>
+          <button role="menuitem" data-command="settings" data-i18n="menu.settings">Settings…</button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="menu.view">View</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="theme" id="theme-item" data-i18n="theme.light">Light theme</button>
+          <button role="menuitem" data-command="sidebar" id="sidebar-item" data-i18n="menu.hideSidebar">Hide categories</button>
+          <button role="menuitem" data-command="select-all"><span data-i18n="menu.selectAll">Select all</span><kbd>Ctrl+A</kbd></button>
+          <hr><span class="menu-label" data-i18n="menu.language">Language</span>
+          <button role="menuitemradio" data-lang="en" aria-checked="true">English</button>
+          <button role="menuitemradio" data-lang="id" aria-checked="false">Bahasa Indonesia</button>
+        </div></div>
+      <div class="menu"><button class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="menu.help">Help</button>
+        <div class="menu-pop" role="menu" hidden>
+          <button role="menuitem" data-command="setup" data-i18n="menu.extGuide">Browser extension guide</button>
+          <button role="menuitem" data-command="check-update" class="desktop-only" data-i18n="menu.checkUpdates">Check for updates…</button>
+          <button role="menuitem" data-command="about" data-i18n="menu.about">About</button>
+        </div></div>
+    </nav>
 
-      <button class="cta" id="tb-add" data-command="add"><svg><use href="#i-download"/></svg><span data-i18n="nav.add">New download</span></button>
+    <div class="toolbar" role="toolbar" aria-label="Download commands">
+      <button class="tool" id="tb-add" data-command="add"><span class="tile teal"><svg><use href="#i-download"/></svg></span><span data-i18n="tb.add">Add URL</span></button>
+      <button class="tool" id="tb-resume" data-command="resume"><span class="tile green"><svg><use href="#i-play"/></svg></span><span data-i18n="act.resume">Resume</span></button>
+      <button class="tool" id="tb-pause" data-command="pause"><span class="tile amber"><svg><use href="#i-pause"/></svg></span><span data-i18n="act.pause">Pause</span></button>
+      <button class="tool" id="tb-pause-all" data-command="pause-all"><span class="tile orange"><svg><use href="#i-pause-all"/></svg></span><span data-i18n="act.pauseAll">Pause all</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="tb-delete" data-command="remove"><span class="tile red"><svg><use href="#i-trash"/></svg></span><span data-i18n="act.remove">Remove</span></button>
+      <button class="tool" id="tb-delete-done" data-command="remove-completed"><span class="tile rose"><svg><use href="#i-broom"/></svg></span><span data-i18n="tb.clearDone">Clear done</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="show-settings" data-command="settings"><span class="tile indigo"><svg><use href="#i-sliders"/></svg></span><span data-i18n="nav.settings">Settings</span></button>
+      <button class="tool" id="show-scheduler" data-command="scheduler"><span class="tile violet"><svg><use href="#i-calendar"/></svg></span><span data-i18n="nav.scheduler">Scheduler</span></button>
+      <button class="tool" id="show-grabber" data-command="grabber"><span class="tile cyan"><svg><use href="#i-net"/></svg></span><span data-i18n="nav.grabber">Site Grabber</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="open-folder" data-command="folder"><span class="tile gold"><svg><use href="#i-folder"/></svg></span><span data-i18n="tb.folder">Folder</span></button>
+      <button class="tool" id="show-setup" data-command="setup"><span class="tile blue"><svg><use href="#i-puzzle"/></svg></span><span data-i18n="tb.extension">Extension</span></button>
+      <label class="search"><svg><use href="#i-search"/></svg><input id="search" type="search" data-i18n-placeholder="search.placeholder" data-i18n-aria="search.aria" placeholder="Search file or site…" aria-label="Search downloads" autocomplete="off"></label>
+    </div>
 
-      <div class="side-scroll">
-      <nav class="nav" aria-label="Library">
-        <p class="nav-label" data-i18n="nav.library">Library</p>
-        <button class="nav-item selected" data-filter="all"><svg class="nav-icon"><use href="#i-stack"/></svg><span data-i18n="nav.all">All downloads</span><b id="count-all">0</b></button>
-        <button class="nav-item" data-filter="unfinished"><svg class="nav-icon c-amber"><use href="#i-hourglass"/></svg><span data-i18n="nav.unfinished">Unfinished</span><b id="count-unfinished">0</b></button>
-        <button class="nav-item" data-filter="queued"><svg class="nav-icon c-violet"><use href="#i-queue"/></svg><span data-i18n="nav.queued">Queued</span><b id="count-queued">0</b></button>
-        <button class="nav-item" data-filter="completed"><svg class="nav-icon c-green"><use href="#i-check"/></svg><span data-i18n="nav.completed">Completed</span><b id="count-completed">0</b></button>
-
-        <p class="nav-label" data-i18n="nav.categories">Categories</p>
-        <button class="nav-item" data-filter="category:video"><i class="dot c-video"></i><span data-i18n="cat.video">Video</span><b id="count-video">0</b></button>
-        <button class="nav-item" data-filter="category:audio"><i class="dot c-audio"></i><span data-i18n="cat.audio">Music</span><b id="count-audio">0</b></button>
-        <button class="nav-item" data-filter="category:image"><i class="dot c-image"></i><span data-i18n="cat.image">Images</span><b id="count-image">0</b></button>
-        <button class="nav-item" data-filter="category:document"><i class="dot c-document"></i><span data-i18n="cat.document">Documents</span><b id="count-document">0</b></button>
-        <button class="nav-item" data-filter="category:archive"><i class="dot c-archive"></i><span data-i18n="cat.archive">Archives</span><b id="count-archive">0</b></button>
-        <button class="nav-item" data-filter="category:program"><i class="dot c-program"></i><span data-i18n="cat.program">Programs</span><b id="count-program">0</b></button>
-        <button class="nav-item" data-filter="category:other"><i class="dot c-other"></i><span data-i18n="cat.other">Other</span><b id="count-other">0</b></button>
-      </nav>
-
-      <div class="side-tools">
-        <p class="nav-label" data-i18n="nav.tools">Tools</p>
-        <button class="nav-item" id="show-grabber" data-command="grabber"><svg class="nav-icon"><use href="#i-net"/></svg><span data-i18n="nav.grabber">Site Grabber</span></button>
-        <button class="nav-item" id="show-scheduler" data-command="scheduler"><svg class="nav-icon"><use href="#i-calendar"/></svg><span data-i18n="nav.scheduler">Scheduler</span></button>
-        <button class="nav-item" id="show-setup" data-command="setup"><svg class="nav-icon"><use href="#i-puzzle"/></svg><span data-i18n="nav.extension">Browser extension</span></button>
-        <button class="nav-item" id="open-folder" data-command="folder"><svg class="nav-icon"><use href="#i-folder"/></svg><span data-i18n="nav.folder">Download folder</span></button>
-        <button class="nav-item" id="show-settings" data-command="settings"><svg class="nav-icon"><use href="#i-sliders"/></svg><span data-i18n="nav.settings">Settings</span></button>
-      </div>
-
-      </div>
-
-      <div class="side-foot">
-        <div class="seg" role="group" aria-label="Language" id="lang-switch">
-          <button type="button" data-lang="en" aria-pressed="true">EN</button>
-          <button type="button" data-lang="id" aria-pressed="false">ID</button>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Categories">
+        <div class="pane-title" data-i18n="nav.library">Library</div>
+        <div class="nav">
+          <button class="nav-item selected" data-filter="all"><svg class="nav-icon"><use href="#i-stack"/></svg><span data-i18n="nav.all">All downloads</span><b id="count-all">0</b></button>
+          <button class="nav-item" data-filter="unfinished"><svg class="nav-icon c-amber"><use href="#i-hourglass"/></svg><span data-i18n="nav.unfinished">Unfinished</span><b id="count-unfinished">0</b></button>
+          <button class="nav-item" data-filter="queued"><svg class="nav-icon c-violet"><use href="#i-queue"/></svg><span data-i18n="nav.queued">Queued</span><b id="count-queued">0</b></button>
+          <button class="nav-item" data-filter="completed"><svg class="nav-icon c-green"><use href="#i-check"/></svg><span data-i18n="nav.completed">Completed</span><b id="count-completed">0</b></button>
+          <p class="nav-label" data-i18n="nav.categories">Categories</p>
+          <button class="nav-item" data-filter="category:video"><i class="dot c-video"></i><span data-i18n="cat.video">Video</span><b id="count-video">0</b></button>
+          <button class="nav-item" data-filter="category:audio"><i class="dot c-audio"></i><span data-i18n="cat.audio">Music</span><b id="count-audio">0</b></button>
+          <button class="nav-item" data-filter="category:image"><i class="dot c-image"></i><span data-i18n="cat.image">Images</span><b id="count-image">0</b></button>
+          <button class="nav-item" data-filter="category:document"><i class="dot c-document"></i><span data-i18n="cat.document">Documents</span><b id="count-document">0</b></button>
+          <button class="nav-item" data-filter="category:archive"><i class="dot c-archive"></i><span data-i18n="cat.archive">Archives</span><b id="count-archive">0</b></button>
+          <button class="nav-item" data-filter="category:program"><i class="dot c-program"></i><span data-i18n="cat.program">Programs</span><b id="count-program">0</b></button>
+          <button class="nav-item" data-filter="category:other"><i class="dot c-other"></i><span data-i18n="cat.other">Other</span><b id="count-other">0</b></button>
         </div>
-        <button class="icon-btn" id="theme-toggle" type="button" data-i18n-title="theme.toggle" data-i18n-aria="theme.toggle" title="Switch theme"><svg><use href="#i-moon"/></svg></button>
-        <button class="version-chip" id="about-open" data-command="about" type="button" data-i18n-title="about.open" title="About"><svg><use href="#i-info"/></svg><span class="version">v__APP_VERSION__</span><i class="update-dot" id="update-dot" hidden></i></button>
+        <div class="side-speed"><span class="stat-label" data-i18n="stat.speed">Speed</span><strong id="speed">0 B/s</strong><canvas id="speed-graph" width="120" height="36" aria-hidden="true"></canvas></div>
+      </aside>
+
+      <main class="list-pane">
+        <div class="table-wrap" id="list-wrap" tabindex="-1">
+          <table class="grid" aria-label="Downloads">
+            <colgroup><col class="w-name"><col class="w-q"><col class="w-size"><col class="w-status"><col class="w-left"><col class="w-rate"><col class="w-last"><col class="w-desc"></colgroup>
+            <thead><tr>
+              <th data-sort="name" aria-sort="none" data-i18n="col.name">File name</th><th data-i18n-title="col.qTitle" title="Queue order">Q</th><th data-sort="size" aria-sort="none" data-i18n="col.size">Size</th><th data-sort="status" aria-sort="none" data-i18n="col.status">Status</th>
+              <th data-i18n="col.left">Time left</th><th data-sort="rate" aria-sort="none" data-i18n="col.rate">Speed</th><th data-sort="last" aria-sort="none" data-i18n="col.last">Last try</th><th data-i18n="col.desc">Description</th>
+            </tr></thead>
+            <tbody id="jobs" aria-live="polite"></tbody>
+          </table>
+          <div id="empty" class="empty"><img src="/logo.svg" alt="" width="56" height="56"><h3 data-i18n="empty.title">No downloads yet</h3><p data-i18n-html="empty.text">Click <b>Add URL</b> or send a link from the browser extension.</p></div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <span id="connection" data-i18n="status.connecting">Connecting…</span>
+      <span><span data-i18n="stat.active">Active</span>: <strong id="active">0</strong></span>
+      <span id="list-count">0 items</span>
+      <span id="after-all-status" class="after-chip" hidden></span>
+      <span id="output-path" class="grow"></span>
+      <span id="edition-label" data-i18n="status.web">Local download manager</span>
+      <div class="seg" role="group" aria-label="Language" id="lang-switch">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="id" aria-pressed="false">ID</button>
       </div>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div class="heading"><h1 id="view-title" data-i18n="nav.all">All downloads</h1><p id="list-count" class="sub">0 items</p></div>
-        <label class="search"><svg><use href="#i-search"/></svg><input id="search" type="search" data-i18n-placeholder="search.placeholder" data-i18n-aria="search.aria" placeholder="Search file or site…" aria-label="Search downloads" autocomplete="off"></label>
-        <label class="sort"><span data-i18n="sort.label">Sort</span>
-          <select id="sort" aria-label="Sort downloads">
-            <option value="" data-i18n="sort.default">Newest first</option>
-            <option value="name" data-i18n="sort.name">Name</option>
-            <option value="size" data-i18n="sort.size">Size</option>
-            <option value="status" data-i18n="sort.status">Status</option>
-            <option value="rate" data-i18n="sort.rate">Speed</option>
-            <option value="last" data-i18n="sort.last">Date</option>
-          </select>
-        </label>
-        <div class="menu"><button class="menu-trigger icon-btn" id="menu-tasks" aria-haspopup="true" aria-expanded="false" data-i18n-title="menu.more" data-i18n-aria="menu.more" title="More"><svg><use href="#i-more"/></svg></button>
-          <div class="menu-pop right" role="menu" hidden>
-            <span class="menu-label" data-i18n="menu.afterAll">When all downloads finish</span>
-            <button role="menuitemradio" data-after="none" aria-checked="true" data-i18n="after.none">Do nothing</button>
-            <button role="menuitemradio" data-after="quit" aria-checked="false" data-i18n="after.quit">Close ZIVAR</button>
-            <button role="menuitemradio" data-after="sleep" aria-checked="false" class="desktop-only" data-i18n="after.sleep">Sleep computer</button>
-            <button role="menuitemradio" data-after="shutdown" aria-checked="false" class="desktop-only" data-i18n="after.shutdown">Shut down computer</button>
-            <hr>
-            <button role="menuitem" data-command="select-all"><span data-i18n="menu.selectAll">Select all</span><kbd>Ctrl+A</kbd></button>
-            <button role="menuitem" data-command="remove-completed" data-i18n="menu.clearDone">Clear completed</button>
-            <hr><button role="menuitem" id="quit-app" data-command="quit" hidden data-i18n="menu.quit">Quit ZIVAR</button>
-            <span class="menu-note" id="quit-note" data-i18n="menu.quitNote">Close the browser tab to quit.</span>
-          </div></div>
-      </header>
-
-      <section class="stats" aria-label="Summary">
-        <div class="stat speed-box"><span class="stat-label" data-i18n="stat.speed">Speed</span><strong id="speed">0 B/s</strong><canvas id="speed-graph" width="120" height="28" aria-hidden="true"></canvas></div>
-        <div class="stat"><span class="stat-label" data-i18n="stat.active">Active</span><strong id="active">0</strong></div>
-        <div class="stat"><span class="stat-label" data-i18n="stat.queued">Waiting</span><strong id="stat-queued">0</strong></div>
-        <div class="stat"><span class="stat-label" data-i18n="stat.done">Completed</span><strong id="stat-done">0</strong></div>
-      </section>
-
-      <div class="actions" role="toolbar" aria-label="Download actions">
-        <button class="btn" id="tb-resume" data-command="resume"><svg><use href="#i-play"/></svg><span data-i18n="act.resume">Resume</span></button>
-        <button class="btn" id="tb-pause" data-command="pause"><svg><use href="#i-pause"/></svg><span data-i18n="act.pause">Pause</span></button>
-        <button class="btn danger-ghost" id="tb-delete" data-command="remove"><svg><use href="#i-trash"/></svg><span data-i18n="act.remove">Remove</span></button>
-        <span class="actions-sep"></span>
-        <button class="btn ghost" id="tb-pause-all" data-command="pause-all"><svg><use href="#i-pause-all"/></svg><span data-i18n="act.pauseAll">Pause all</span></button>
-        <button class="btn ghost" id="tb-resume-all" data-command="resume-all"><svg><use href="#i-play"/></svg><span data-i18n="act.resumeAll">Resume all</span></button>
-        <button class="btn ghost" id="tb-delete-done" data-command="remove-completed"><svg><use href="#i-broom"/></svg><span data-i18n="act.clearDone">Clear completed</span></button>
-        <span id="after-all-status" class="after-chip" hidden></span>
-      </div>
-
-      <div class="list-wrap" id="list-wrap" tabindex="-1">
-        <div id="jobs" class="jobs" role="listbox" aria-multiselectable="true" aria-label="Downloads" aria-live="polite"></div>
-        <div id="empty" class="empty"><img src="/logo.svg" alt="" width="64" height="64"><h3 data-i18n="empty.title">No downloads yet</h3><p data-i18n-html="empty.text">Click <b>New download</b> or send a link from the browser extension.</p></div>
-      </div>
-
-      <footer class="statusbar">
-        <span id="connection" data-i18n="status.connecting">Connecting…</span>
-        <span id="output-path" class="grow"></span>
-        <span id="edition-label" data-i18n="status.web">Local download manager</span>
-      </footer>
-    </main>
+      <button class="icon-btn" id="theme-toggle" type="button" data-i18n-title="theme.toggle" data-i18n-aria="theme.toggle" title="Switch theme"><svg><use href="#i-moon"/></svg></button>
+      <button class="version-chip" id="about-open" data-command="about" type="button" data-i18n-title="about.open" title="About"><span class="version">v__APP_VERSION__</span><i class="update-dot" id="update-dot" hidden></i></button>
+    </footer>
   </div>
 
   <div class="context-menu" id="context-menu" role="menu" hidden>

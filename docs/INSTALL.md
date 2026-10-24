@@ -87,7 +87,7 @@ The queue, settings, pairing token and log (`desktop.log`) are stored in the app
 
 ## Updating
 
-Open **About** (the version button at the bottom of the sidebar), click **Check for updates**, then **Download and install**. When the download is verified, **Install and restart** applies it:
+Open **About** (the version button at the right of the status bar, or **Help → About**), click **Check for updates**, then **Download and install**. When the download is verified, **Install and restart** applies it:
 
 | Installed as | What happens |
 | --- | --- |

@@ -44,7 +44,7 @@
 - Tambah banyak URL sekaligus, termasuk pola seperti `foto[001-120].jpg`, plus **Site Grabber** untuk mengambil file dari sebuah halaman.
 - Pantau clipboard, notifikasi desktop, dan aksi setelah semua unduhan selesai (keluar, tidur, matikan komputer).
 - Jalan di system tray dan dapat dimulai otomatis saat login.
-- Antarmuka sidebar dan kartu yang bersih dengan tema terang dan gelap, dalam bahasa **Inggris** (bawaan) atau **Indonesia** dengan satu klik.
+- Antarmuka bergaya aplikasi desktop (menu bar, toolbar, daftar kategori, dan tabel unduhan) dengan tema terang dan gelap, dalam bahasa **Inggris** (bawaan) atau **Indonesia** dengan satu klik.
 - Pembaruan di dalam aplikasi: periksa, unduh, verifikasi checksum, dan pasang dari dialog Tentang; pembaruan juga bisa diunduh otomatis.
 
 **Video**
@@ -101,7 +101,7 @@ Ekstensi disertakan dalam aplikasi dan disalin ke folder data saat ZIVAR pertama
 
 ## Pembaruan
 
-Buka **Tentang** (tombol versi di bagian bawah sidebar) lalu klik **Periksa pembaruan**. ZIVAR mengunduh file yang sesuai dengan cara pemasangannya (installer, portable, DMG, AppImage, `.deb`, atau `.rpm`), memeriksa checksum SHA-256-nya, lalu memasangnya saat Anda klik **Pasang dan mulai ulang**. Biarkan **Unduh pembaruan secara otomatis** aktif agar unduhan berjalan sendiri; pemasangan selalu atas klik Anda.
+Buka **Tentang** (tombol versi di sisi kanan status bar, atau **Bantuan → Tentang**) lalu klik **Periksa pembaruan**. ZIVAR mengunduh file yang sesuai dengan cara pemasangannya (installer, portable, DMG, AppImage, `.deb`, atau `.rpm`), memeriksa checksum SHA-256-nya, lalu memasangnya saat Anda klik **Pasang dan mulai ulang**. Biarkan **Unduh pembaruan secara otomatis** aktif agar unduhan berjalan sendiri; pemasangan selalu atas klik Anda.
 
 Pembaruan diambil dari berkas `latest.json` yang dilampirkan pada setiap rilis GitHub:
 

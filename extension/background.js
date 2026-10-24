@@ -633,7 +633,12 @@ async function videoCandidates(sender) {
   const unique = [...new Map(items.filter(item => !isAd(item.url)).map(item => [item.url, item])).values()].slice(0, 40);
   return { items: unique, adsOnly: !unique.length && ads.length > 0 };
 }
-const createMenu = () => chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: 'zivar-download', title: ZI.t('bg.menu'), contexts: ['link', 'video', 'audio'] }));
+// Chrome runs removeAll and create asynchronously, so overlapping calls (install, start-up and a language
+// change can all ask at once) would collide on the same id. Rebuilding the menu is therefore serialised.
+let menuQueue = Promise.resolve();
+const createMenu = () => menuQueue = menuQueue.then(() => new Promise(resolve => chrome.contextMenus.removeAll(() => {
+  chrome.contextMenus.create({ id: 'zivar-download', title: ZI.t('bg.menu'), contexts: ['link', 'video', 'audio'] }, () => { void chrome.runtime.lastError; resolve(); });
+})));
 ZI.ready.then(createMenu);
 ZI.onChange.push(createMenu);
 chrome.runtime.onInstalled.addListener(details => {

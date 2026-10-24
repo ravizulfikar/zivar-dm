@@ -2,6 +2,29 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.17.0] - 2026-10-24
+
+### Ditambahkan
+
+- Dukungan macOS (Apple Silicon dan Intel) dan Linux (x64 dan arm64): `.dmg`, `.AppImage`, `.deb` untuk Ubuntu/Debian/Linux Mint, `.rpm` untuk Fedora/openSUSE, dan `.tar.gz`.
+- Logo dan ikon baru ZIVAR (huruf Z dengan bar progres) untuk aplikasi, installer, system tray, dan extension browser.
+- Lisensi MIT, `THIRD_PARTY_NOTICES.md`, dan dokumentasi lengkap di `README.md` serta `docs/`.
+- Alur rilis GitHub Actions: build otomatis untuk lima target, `SHA256SUMS.txt`, dan `latest.json` untuk pemeriksaan pembaruan.
+- Feed pembaruan boleh memuat installer per platform (`platforms`), sehingga satu `latest.json` melayani Windows, macOS, dan Linux.
+- Test yang memastikan daftar tipe file dan situs bawaan extension sama dengan aplikasi.
+
+### Diubah
+
+- Mulai otomatis saat login kini berfungsi di macOS dan Linux (entri autostart XDG), bukan hanya Windows.
+- Aksi setelah semua unduhan selesai (matikan komputer, tidur) memakai perintah sistem masing-masing platform.
+- Tombol buka folder unduhan memakai Finder di macOS dan `xdg-open` di Linux.
+- Nama extractor dan runtime yt-dlp mengikuti platform (`.exe` hanya di Windows).
+
+### Diperbaiki
+
+- Validasi pola situs pengecualian memperlakukan titik sebagai titik literal; sebelumnya karakter seperti `_` ikut lolos sebagai pemisah label.
+- File yang berpotensi dieksekusi di macOS dan Linux (`.sh`, `.AppImage`, `.deb`, `.dmg`, dan lainnya) hanya ditampilkan di folder, tidak dibuka otomatis.
+
 ## [0.16.4] - 2026-10-22
 
 ### Diperbaiki

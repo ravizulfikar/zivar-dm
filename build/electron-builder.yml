@@ -1,0 +1,78 @@
+# Release packaging for Windows, macOS and Linux.
+# Used with:  electron-builder --config build/electron-builder.yml
+# The vendor/ folder is filled per platform by build/fetch-vendor.mjs before packaging.
+appId: com.zivar.downloadmanager
+productName: ZIVAR Download Manager
+copyright: Copyright (c) 2026 ZIVAR
+asar: true
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  onlyLoadAppFromAsar: true
+  enableEmbeddedAsarIntegrityValidation: true
+directories:
+  output: dist
+  buildResources: desktop/assets
+files:
+  - app/**/*
+  - desktop/**/*
+  - package.json
+extraResources:
+  - from: extension
+    to: extension
+    filter: ["**/*"]
+  - from: vendor/ffmpeg
+    to: ffmpeg
+    filter: ["**/*"]
+  - from: vendor/yt-dlp
+    to: yt-dlp
+    filter: ["**/*"]
+
+win:
+  icon: desktop/assets/app.ico
+  target: [portable, nsis]
+portable:
+  artifactName: ZIVAR-${version}-Portable.exe
+nsis:
+  include: desktop/installer.nsh
+  artifactName: ZIVAR-Setup-${version}.exe
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+
+mac:
+  icon: desktop/assets/app.icns
+  category: public.app-category.utilities
+  # Builds are not code-signed or notarized. See "macOS" in README.md.
+  identity: null
+  target: [dmg, zip]
+  artifactName: ZIVAR-${version}-mac-${arch}.${ext}
+dmg:
+  title: ZIVAR Download Manager ${version}
+
+linux:
+  icon: desktop/assets/app-1024.png
+  category: Network
+  synopsis: Download manager with browser companion
+  description: Download manager with multi-connection downloads, a queue, YouTube and HLS/DASH support and a browser companion extension.
+  maintainer: ZIVAR
+  executableName: zivar-download-manager
+  desktop:
+    entry:
+      Name: ZIVAR Download Manager
+      Comment: Download manager with browser companion
+      Categories: Network;FileTransfer;
+      StartupWMClass: ZIVAR Download Manager
+  target: [AppImage, deb, rpm, tar.gz]
+  artifactName: ZIVAR-${version}-linux-${arch}.${ext}
+deb:
+  depends: [libgtk-3-0, libnotify4, libnss3, libxss1, libxtst6, xdg-utils, libatspi2.0-0, libuuid1, libsecret-1-0]
+  afterInstall: build/linux-after-install.sh
+rpm:
+  afterInstall: build/linux-after-install.sh
+appImage:
+  artifactName: ZIVAR-${version}-linux-${arch}.AppImage

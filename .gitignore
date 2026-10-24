@@ -12,3 +12,7 @@ vendor/**/*.exe
 # Test outputs and screenshots
 artifacts/
 scripts/_dbg-*.mjs
+# Helper binaries for macOS/Linux (fetched by build/fetch-vendor.mjs)
+vendor/yt-dlp/yt-dlp
+vendor/yt-dlp/node
+vendor/ffmpeg/ffmpeg

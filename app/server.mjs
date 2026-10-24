@@ -139,8 +139,9 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
         }
         if (req.method === 'POST' && url.pathname === '/api/refresh/cancel') return json(res, 200, { pending: manager.cancelRefresh() });
         if (req.method === 'POST' && url.pathname === '/api/open-folder') {
-          if (process.platform === 'win32') {
-            const child = spawn('explorer.exe', [downloadDirectory], { detached: true, stdio: 'ignore', windowsHide: true });
+          const opener = { win32: 'explorer.exe', darwin: 'open', linux: 'xdg-open' }[process.platform];
+          if (opener) {
+            const child = spawn(opener, [downloadDirectory], { detached: true, stdio: 'ignore', windowsHide: true });
             child.on('error', error => console.error('Tidak dapat membuka folder:', error.message)); child.unref();
           }
           return json(res, 200, { path: downloadDirectory });

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, clipboard, shell, dialog, Notification } from 'electron';
 import fs from 'node:fs/promises';
-import { readFileSync, appendFileSync } from 'node:fs';
+import { readFileSync, appendFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -143,22 +143,33 @@ async function checkAllDone() {
   afterAllRunning = true;
   try { await runAfterAll(action); } catch (error) { await log(error); } finally { afterAllRunning = false; }
 }
+// Power commands per platform. Windows schedules the shutdown up front so the OS shows
+// its own countdown; macOS and Linux run the command once the countdown ends.
+const isWindows = process.platform === 'win32';
+const run = (command, args) => spawn(command, args, { windowsHide: true, stdio: 'ignore' }).on('error', log);
+const powerCommands = {
+  win32: { shutdown: ['shutdown.exe', ['/s', '/t', '0']], sleep: ['powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Add-Type -AssemblyName System.Windows.Forms; [void][System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false)']] },
+  darwin: { shutdown: ['osascript', ['-e', 'tell application "System Events" to shut down']], sleep: ['pmset', ['sleepnow']] },
+  linux: { shutdown: ['systemctl', ['poweroff']], sleep: ['systemctl', ['suspend']] },
+}[process.platform] || {};
 async function runAfterAll(action) {
   const labels = { quit: 'menutup ZIVAR', sleep: 'membuat komputer tidur (sleep)', shutdown: 'mematikan komputer' };
   record(`after-all:${action}`);
   if (action === 'quit') { quitting = true; app.quit(); return; }
   if (testLog) return;
+  const command = powerCommands[action];
+  if (!command) { notify('Aksi tidak didukung', `Sistem ini tidak mendukung aksi "${labels[action]}".`); return; }
   // 60-second countdown with a Cancel button.
   const controller = new AbortController(); let seconds = 60;
-  if (action === 'shutdown') spawn('shutdown.exe', ['/s', '/t', '60', '/c', 'ZIVAR: semua unduhan selesai. Komputer akan dimatikan.'], { windowsHide: true, stdio: 'ignore' }).on('error', log);
+  if (isWindows && action === 'shutdown') run('shutdown.exe', ['/s', '/t', '60', '/c', 'ZIVAR: semua unduhan selesai. Komputer akan dimatikan.']);
   const timer = setInterval(() => { seconds--; if (seconds <= 0) controller.abort(); }, 1000);
   showWindow();
   const answer = await dialog.showMessageBox(window, { type: 'warning', title: 'Semua unduhan selesai', message: `ZIVAR akan ${labels[action]} dalam 60 detik.`, detail: 'Klik Batalkan untuk membatalkan.', buttons: ['Batalkan', 'Lakukan sekarang'], defaultId: 1, cancelId: 0, noLink: true, signal: controller.signal });
   clearInterval(timer);
   const cancelled = !controller.signal.aborted && answer.response === 0;
-  if (cancelled) { if (action === 'shutdown') spawn('shutdown.exe', ['/a'], { windowsHide: true, stdio: 'ignore' }).on('error', log); return; }
-  if (action === 'shutdown' && answer.response === 1) spawn('shutdown.exe', ['/a'], { windowsHide: true, stdio: 'ignore' }).on('exit', () => spawn('shutdown.exe', ['/s', '/t', '0'], { windowsHide: true, stdio: 'ignore' }));
-  if (action === 'sleep') spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', 'Add-Type -AssemblyName System.Windows.Forms; [void][System.Windows.Forms.Application]::SetSuspendState([System.Windows.Forms.PowerState]::Suspend, $false, $false)'], { windowsHide: true, stdio: 'ignore' }).on('error', log);
+  if (cancelled) { if (isWindows && action === 'shutdown') run('shutdown.exe', ['/a']); return; }
+  if (isWindows && action === 'shutdown' && answer.response === 1) spawn('shutdown.exe', ['/a'], { windowsHide: true, stdio: 'ignore' }).on('exit', () => run(...command));
+  else if (!(isWindows && action === 'shutdown')) run(...command);
 }
 // ---- App updates ----
 // The feed is a small JSON file you publish: {"version":"0.15.0","url":"https://…/ZIVAR-Setup-0.15.0.exe","sha256":"…","notes":"…"}.
@@ -174,6 +185,10 @@ async function checkUpdate() {
   if (!response.ok) throw new Error(`Server pembaruan membalas HTTP ${response.status}.`);
   const info = await response.json().catch(() => ({}));
   if (!/^\d+\.\d+\.\d+$/.test(info.version || '')) throw new Error('Info pembaruan tidak valid.');
+  // A feed may list one installer per platform: {"platforms":{"win32-x64":{"url":"…","sha256":"…"}}}.
+  const platform = info.platforms?.[`${process.platform}-${process.arch}`];
+  if (info.platforms && !platform) return { configured: true, current: app.getVersion(), version: info.version, available: false, notes: '', unsupported: true };
+  if (platform) Object.assign(info, { url: platform.url, sha256: platform.sha256 });
   const url = new URL(info.url || '', updateFeed);
   const local = ['127.0.0.1', 'localhost'].includes(url.hostname);
   if (url.protocol !== 'https:' && !(local && url.protocol === 'http:')) throw new Error('Alamat installer pembaruan harus memakai HTTPS.');
@@ -184,7 +199,9 @@ async function downloadUpdate() {
   const info = await checkUpdate();
   if (!info.available) throw new Error('ZIVAR sudah versi terbaru.');
   if (!service.manager) throw new Error('Unduh pembaruan dari mesin ZIVAR desktop.');
-  return service.manager.add({ url: info.url, filename: `ZIVAR-Setup-${info.version}.exe`, expectedSha256: info.sha256, category: 'program' });
+  const extension = path.extname(new URL(info.url).pathname).toLowerCase();
+  const name = /^\.(exe|dmg|deb|rpm|appimage|zip|gz)$/.test(extension) ? `ZIVAR-Setup-${info.version}${extension}` : `ZIVAR-Setup-${info.version}${isWindows ? '.exe' : ''}`;
+  return service.manager.add({ url: info.url, filename: name, expectedSha256: info.sha256, category: 'program' });
 }
 async function backgroundUpdateCheck() {
   if (!updateFeed || process.env.ZIVAR_DESKTOP_TEST_MODE === '1') return;
@@ -197,10 +214,27 @@ async function backgroundUpdateCheck() {
   } catch (error) { await log(error); }
 }
 
-// ---- Start with Windows ----
-const startupTarget = () => process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
-function getAutoStart() { return Boolean(app.getLoginItemSettings({ path: startupTarget(), args: ['--hidden'] }).openAtLogin); }
-function setAutoStart(enabled) { app.setLoginItemSettings({ openAtLogin: Boolean(enabled), path: startupTarget(), args: ['--hidden'] }); return getAutoStart(); }
+// ---- Start at login ----
+// Windows and macOS use Electron's login items. Linux has no such API, so an XDG autostart
+// entry is written instead (an AppImage starts itself through $APPIMAGE).
+const startupTarget = () => process.env.PORTABLE_EXECUTABLE_FILE || process.env.APPIMAGE || process.execPath;
+const autostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(app.getPath('home'), '.config'), 'autostart', 'zivar-download-manager.desktop');
+function getAutoStart() {
+  if (process.platform === 'linux') { try { readFileSync(autostartFile()); return true; } catch { return false; } }
+  return Boolean(app.getLoginItemSettings({ path: startupTarget(), args: ['--hidden'] }).openAtLogin);
+}
+function setAutoStart(enabled) {
+  if (process.platform === 'linux') {
+    const quote = value => `"${String(value).replace(/(["`$\\])/g, '\\$1')}"`;
+    const entry = ['[Desktop Entry]', 'Type=Application', 'Name=ZIVAR Download Manager', `Exec=${quote(startupTarget())} --hidden`, 'Icon=zivar-download-manager', 'X-GNOME-Autostart-enabled=true', 'Terminal=false', ''].join('\n');
+    try {
+      if (enabled) { mkdirSync(path.dirname(autostartFile()), { recursive: true }); writeFileSync(autostartFile(), entry); }
+      else rmSync(autostartFile(), { force: true });
+    } catch (error) { log(error); }
+    return getAutoStart();
+  }
+  app.setLoginItemSettings({ openAtLogin: Boolean(enabled), path: startupTarget(), args: ['--hidden'] }); return getAutoStart();
+}
 const startHidden = process.argv.includes('--hidden');
 
 function trusted(event) { return event.sender === window?.webContents && event.senderFrame?.url === service?.origin + '/'; }
@@ -232,7 +266,7 @@ function installBridge() {
     await fs.access(full).catch(() => { throw new Error('File tidak ditemukan. Mungkin sudah dipindahkan atau dihapus.'); });
     return full;
   };
-  const runnable = /\.(exe|msi|msix|appx|bat|cmd|com|scr|pif|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|lnk|reg|jar|cpl|dll|url)$/i;
+  const runnable = /\.(exe|msi|msix|appx|bat|cmd|com|scr|pif|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|lnk|reg|jar|cpl|dll|url|sh|bash|run|appimage|deb|rpm|dmg|pkg|app|command|desktop|bin)$/i;
   ipcMain.handle('zivar:open-file', async (event, target) => {
     if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
     const full = await insideDownloads(target);
@@ -273,7 +307,7 @@ function createWindow() {
   window.webContents.on('will-navigate', (event, target) => { if (target !== service.origin + '/') event.preventDefault(); });
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   window.webContents.session.setPermissionCheckHandler(() => false);
-  // Started by Windows at login with --hidden: stay in the tray.
+  // Started by the OS at login with --hidden: stay in the tray.
   window.once('ready-to-show', () => { if (!startHidden) showWindow(); });
   window.on('close', event => {
     if (quitting) return;

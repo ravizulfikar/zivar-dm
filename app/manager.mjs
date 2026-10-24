@@ -43,7 +43,7 @@ function normalizeSitePattern(value) {
   if (wildcard) text = text.slice(2);
   if (!text || text.includes('://') || /[\s\/?#:]/.test(text) || text.length > 253) return null;
   const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
-  if (!new RegExp(`^(?:${label})(?:\.(?:${label}))*$`).test(text)) return null;
+  if (!new RegExp(`^(?:${label})(?:\\.(?:${label}))*$`).test(text)) return null;
   return `${wildcard ? '*.' : ''}${text}`;
 }
 export function normalizeBrowserDownloadSiteExclusions(value) {

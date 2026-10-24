@@ -6,10 +6,10 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <!-- Z monogram: top bar, diagonal that ends in a download arrowhead, progress-bar base -->
-  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="50">
-    <path d="M140 138H372L140 372"/>
+  <!-- Z monogram: top bar, diagonal, and a base. The diagonal ends in an arrowhead that
+       points down into the base, so the letter doubles as a download arrow. -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="48">
+    <path d="M140 136H372L148 366H372"/>
+    <path d="M148 246V366"/>
   </g>
-  <path d="M140 372H372" fill="none" stroke="#fff" stroke-opacity=".38" stroke-linecap="round" stroke-width="50"/>
-  <path d="M140 372H296" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="50"/>
 </svg>

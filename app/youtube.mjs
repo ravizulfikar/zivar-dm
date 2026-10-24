@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs/promises';
+import fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -6,11 +6,13 @@ import { fileURLToPath } from 'node:url';
 import { ffmpegPath } from './media.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = () => path.join(process.resourcesPath || path.join(root, 'vendor'), 'yt-dlp');
+// Bundled helpers are .exe on Windows and plain executables on macOS/Linux.
+const binary = name => process.platform === 'win32' ? `${name}.exe` : name;
 // The bundled yt-dlp lives in a read-only install folder. An updatable copy is kept
 // in the user's data folder; it is used whenever it exists.
 let extractorCopy = null;
-export function useExtractorDirectory(directory) { extractorCopy = directory ? path.join(directory, 'yt-dlp.exe') : null; }
-const extractorExe = () => extractorCopy && existsSync(extractorCopy) ? extractorCopy : path.join(runtime(), 'yt-dlp.exe');
+export function useExtractorDirectory(directory) { extractorCopy = directory ? path.join(directory, binary('yt-dlp')) : null; }
+const extractorExe = () => extractorCopy && existsSync(extractorCopy) ? extractorCopy : path.join(runtime(), binary('yt-dlp'));
 function checkedExtractorExe() {
   const executable = extractorExe();
   if (!existsSync(executable)) throw new Error('Extractor yt-dlp belum tersedia. Instal ulang ZIVAR dengan installer versi terbaru.');
@@ -50,7 +52,7 @@ export function youtubeUrl(value) {
 }
 const baseArgs = () => {
   const args = ['--ignore-config','--no-playlist','--no-warnings','--no-colors','--no-plugin-dirs','--socket-timeout','20','--retries','2'];
-  const nodeRuntime = path.join(runtime(), 'node.exe');
+  const nodeRuntime = path.join(runtime(), binary('node'));
   if (existsSync(nodeRuntime)) args.push('--js-runtimes', `node:${nodeRuntime}`);
   args.push('--ffmpeg-location', path.dirname(ffmpegPath()));
   return args;

@@ -2,6 +2,12 @@
 // Add new strings to BOTH dictionaries (tests/i18n.test.mjs fails when they differ).
 (() => {
   const en = {
+    'menu.scheduler': 'Scheduler…', 'menu.settings': 'Settings…', 'menu.tasks': 'Tasks', 'menu.file': 'File', 'menu.downloads': 'Downloads', 'menu.view': 'View', 'menu.help': 'Help',
+    'menu.addUrl': 'Add URL…', 'menu.grabber': 'Site Grabber…', 'menu.openFolder': 'Open download folder', 'menu.language': 'Language',
+    'menu.hideSidebar': 'Hide categories', 'menu.showSidebar': 'Show categories', 'menu.extGuide': 'Browser extension guide', 'menu.checkUpdates': 'Check for updates…', 'menu.about': 'About',
+    'theme.light': 'Light theme', 'theme.dark': 'Dark theme',
+    'tb.add': 'Add URL', 'tb.clearDone': 'Clear done', 'tb.folder': 'Folder', 'tb.extension': 'Extension',
+    'col.name': 'File name', 'col.qTitle': 'Queue order', 'col.size': 'Size', 'col.status': 'Status', 'col.left': 'Time left', 'col.rate': 'Speed', 'col.last': 'Last try', 'col.desc': 'Description',
     'nav.add': 'New download', 'nav.library': 'Library', 'nav.all': 'All downloads', 'nav.unfinished': 'Unfinished', 'nav.queued': 'Queued', 'nav.completed': 'Completed',
     'nav.categories': 'Categories', 'nav.tools': 'Tools', 'nav.grabber': 'Site Grabber', 'nav.scheduler': 'Scheduler', 'nav.extension': 'Browser extension', 'nav.folder': 'Download folder', 'nav.settings': 'Settings',
     'cat.video': 'Video', 'cat.audio': 'Music', 'cat.image': 'Images', 'cat.document': 'Documents', 'cat.archive': 'Archives', 'cat.program': 'Programs', 'cat.other': 'Other',
@@ -14,7 +20,7 @@
     'after.chip': 'When done: {action}', 'after.noneToast': 'No action after downloads finish.', 'after.toast': 'When all downloads finish: {action}.',
     'stat.speed': 'Speed', 'stat.active': 'Active', 'stat.queued': 'Waiting', 'stat.done': 'Completed',
     'act.resume': 'Resume', 'act.pause': 'Pause', 'act.remove': 'Remove', 'act.open': 'Open', 'act.pauseAll': 'Pause all', 'act.resumeAll': 'Resume all', 'act.clearDone': 'Clear completed',
-    'empty.title': 'No downloads yet', 'empty.text': 'Click <b>New download</b> or send a link from the browser extension.',
+    'empty.title': 'No downloads yet', 'empty.text': 'Click <b>Add URL</b> or send a link from the browser extension.',
     'status.connecting': 'Connecting…', 'status.connected': 'Connected locally', 'status.disconnected': 'App disconnected', 'status.web': 'Local download manager', 'status.desktop': 'Desktop download manager', 'status.folder': 'Folder: {path}',
     'status.queued': 'Queued', 'status.downloading': 'Downloading', 'status.pausing': 'Pausing…', 'status.paused': 'Paused', 'status.assembling': 'Merging…', 'status.completed': 'Completed', 'status.cancelling': 'Cancelling…', 'status.cancelled': 'Cancelled', 'status.error': 'Failed',
     'list.one': '{n} item', 'list.many': '{n} items', 'list.selected': '{n} selected',
@@ -73,6 +79,12 @@
     'setup.folderCopied': 'Folder location copied.', 'setup.folderFailed': 'Could not copy the folder location.', 'setup.folderCopiedWeb': 'Folder location copied. Open it in your file manager.', 'setup.folderManual': 'Copy the folder location shown above.',
   };
   const id = {
+    'menu.scheduler': 'Penjadwal…', 'menu.settings': 'Pengaturan…', 'menu.tasks': 'Tugas', 'menu.file': 'File', 'menu.downloads': 'Unduhan', 'menu.view': 'Tampilan', 'menu.help': 'Bantuan',
+    'menu.addUrl': 'Tambah URL…', 'menu.grabber': 'Site Grabber…', 'menu.openFolder': 'Buka folder unduhan', 'menu.language': 'Bahasa',
+    'menu.hideSidebar': 'Sembunyikan kategori', 'menu.showSidebar': 'Tampilkan kategori', 'menu.extGuide': 'Panduan ekstensi browser', 'menu.checkUpdates': 'Periksa pembaruan…', 'menu.about': 'Tentang',
+    'theme.light': 'Tema terang', 'theme.dark': 'Tema gelap',
+    'tb.add': 'Tambah URL', 'tb.clearDone': 'Hapus selesai', 'tb.folder': 'Folder', 'tb.extension': 'Ekstensi',
+    'col.name': 'Nama file', 'col.qTitle': 'Urutan antrean', 'col.size': 'Ukuran', 'col.status': 'Status', 'col.left': 'Sisa waktu', 'col.rate': 'Kecepatan', 'col.last': 'Terakhir dicoba', 'col.desc': 'Keterangan',
     'nav.add': 'Unduhan baru', 'nav.library': 'Pustaka', 'nav.all': 'Semua unduhan', 'nav.unfinished': 'Belum selesai', 'nav.queued': 'Antrean', 'nav.completed': 'Selesai',
     'nav.categories': 'Kategori', 'nav.tools': 'Alat', 'nav.grabber': 'Site Grabber', 'nav.scheduler': 'Penjadwal', 'nav.extension': 'Ekstensi browser', 'nav.folder': 'Folder unduhan', 'nav.settings': 'Pengaturan',
     'cat.video': 'Video', 'cat.audio': 'Musik', 'cat.image': 'Gambar', 'cat.document': 'Dokumen', 'cat.archive': 'Terkompresi', 'cat.program': 'Program', 'cat.other': 'Lainnya',
@@ -85,7 +97,7 @@
     'after.chip': 'Setelah selesai: {action}', 'after.noneToast': 'Tidak ada tindakan setelah unduhan selesai.', 'after.toast': 'Setelah semua unduhan selesai: {action}.',
     'stat.speed': 'Kecepatan', 'stat.active': 'Aktif', 'stat.queued': 'Menunggu', 'stat.done': 'Selesai',
     'act.resume': 'Lanjutkan', 'act.pause': 'Jeda', 'act.remove': 'Hapus', 'act.open': 'Buka', 'act.pauseAll': 'Jeda semua', 'act.resumeAll': 'Lanjutkan semua', 'act.clearDone': 'Hapus yang selesai',
-    'empty.title': 'Belum ada unduhan', 'empty.text': 'Klik <b>Unduhan baru</b> atau kirim tautan dari ekstensi browser.',
+    'empty.title': 'Belum ada unduhan', 'empty.text': 'Klik <b>Tambah URL</b> atau kirim tautan dari ekstensi browser.',
     'status.connecting': 'Menghubungkan…', 'status.connected': 'Terhubung lokal', 'status.disconnected': 'Aplikasi terputus', 'status.web': 'Pengelola unduhan lokal', 'status.desktop': 'Pengelola unduhan desktop', 'status.folder': 'Folder: {path}',
     'status.queued': 'Antrean', 'status.downloading': 'Mengunduh', 'status.pausing': 'Menjeda…', 'status.paused': 'Dijeda', 'status.assembling': 'Menyatukan…', 'status.completed': 'Selesai', 'status.cancelling': 'Membatalkan…', 'status.cancelled': 'Dibatalkan', 'status.error': 'Gagal',
     'list.one': '{n} item', 'list.many': '{n} item', 'list.selected': '{n} dipilih',

@@ -83,11 +83,11 @@ try {
     await page.waitForFunction(() => !document.querySelector('#add-dialog').open);
   }
   await row(page, 's1.bin').locator('.badge.downloading').waitFor();
-  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.meta-q').textContent === '#2');
+  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.cell-q').textContent === '2');
   await row(page, 's3.bin').click();
   await row(page, 's3.bin').click({ button: 'right' });
   await page.locator('#context-menu').getByRole('menuitem', { name: 'Move to front of queue' }).click();
-  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.meta-q').textContent === '#1');
+  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.cell-q').textContent === '1');
 
   // Refresh address of the running download by pasting a new link.
   await row(page, 's1.bin').click({ button: 'right' });
@@ -101,7 +101,7 @@ try {
   assert.equal(s1.url, `${origin}/slow/s1.bin?token=fresh`); assert.ok(s1.refreshedAt);
 
   // "After all downloads" choice from the menu, shown in the status bar.
-  await page.locator('#menu-tasks').click();
+  await page.locator('.menu-trigger', { hasText: 'Downloads' }).click();
   await page.getByRole('menuitemradio', { name: 'Close ZIVAR' }).click();
   await page.locator('#after-all-status').filter({ hasText: 'Close ZIVAR' }).waitFor();
   assert.equal(app.manager.settings().afterAll, 'quit');

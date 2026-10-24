@@ -4,6 +4,18 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.19.0] - 2026-10-25
+
+### Diubah
+
+- Antarmuka kembali ke tata letak desktop: menu bar (Tugas, File, Unduhan, Tampilan, Bantuan), toolbar, daftar kategori, dan tabel unduhan dengan kolom yang bisa diurutkan, menggantikan dashboard berbentuk kartu. Warna segar, tema gelap dan terang, serta badge status dan progress bar tetap dipertahankan.
+- Bahasa dan tema dipindah ke tempat yang lazim di aplikasi desktop: Tampilan → Bahasa dan Tampilan → Tema terang/gelap, ditambah tombol kecil EN/ID dan tema di status bar. Tentang dan pembaruan ada di menu Bantuan dan tombol versi.
+- Angka dan grafik kecepatan berada di bagian bawah daftar kategori.
+
+### Dihapus
+
+- Kartu ringkasan, menu urutkan, dan tombol di setiap kartu; pengurutan dilakukan dengan mengklik header kolom, sedangkan aksi ada di toolbar, menu, dan menu klik kanan.
+
 ## [0.18.1] - 2026-10-25
 
 ### Diperbaiki

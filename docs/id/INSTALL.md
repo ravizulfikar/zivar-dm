@@ -87,7 +87,7 @@ Antrean, pengaturan, token pairing, dan log (`desktop.log`) tersimpan di folder 
 
 ## Memperbarui
 
-Buka **Tentang** (tombol versi di bagian bawah sidebar), klik **Periksa pembaruan**, lalu **Unduh dan pasang**. Setelah unduhan terverifikasi, **Pasang dan mulai ulang** menerapkannya:
+Buka **Tentang** (tombol versi di sisi kanan status bar, atau **Bantuan → Tentang**), klik **Periksa pembaruan**, lalu **Unduh dan pasang**. Setelah unduhan terverifikasi, **Pasang dan mulai ulang** menerapkannya:
 
 | Dipasang sebagai | Yang terjadi |
 | --- | --- |

@@ -31,7 +31,7 @@ try {
   browser = await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
   const context = browser.contexts()[0];
   const page = context.pages().find(page => page.url().startsWith('http://127.0.0.1:')) || await context.waitForEvent('page');
-  await page.locator('#edition-label').filter({ hasText: 'Pengelola unduhan desktop' }).waitFor();
+  await page.locator('#edition-label').filter({ hasText: 'Desktop download manager' }).waitFor();
   const info = await page.evaluate(() => window.zivarDesktop.getInfo());
   assert.equal(info.version, version); assert.equal(info.attached, false);
   assert.equal(info.extensionDirectory, path.join(state, 'browser-extension'));

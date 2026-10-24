@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ZIVAR Download Manager">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="0" x2="448" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#19c6b4"/>
+      <stop offset="1" stop-color="#3b3fd8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- Z monogram: top bar, diagonal, and a base. The diagonal ends in an arrowhead that
+       points down into the base, so the letter doubles as a download arrow. -->
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="48">
+    <path d="M140 136H372L148 366H372"/>
+    <path d="M148 246V366"/>
+  </g>
+</svg>

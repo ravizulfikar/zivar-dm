@@ -78,12 +78,24 @@ Lihat bagian **Memasang ekstensi browser** di [README](../../README.id.md). Fold
 | macOS | `~/Library/Application Support/ZIVAR Download Manager/browser-extension` |
 | Linux | `~/.config/ZIVAR Download Manager/browser-extension` |
 
-Menu tray **Folder ekstensi Chrome** membuka folder itu langsung.
+Menu tray **Folder ekstensi browser** membuka folder itu langsung.
 
 ## Lokasi data
 
 Antrean, pengaturan, token pairing, dan log (`desktop.log`) tersimpan di folder data aplikasi
 (induk dari folder ekstensi di atas). File unduhan secara bawaan masuk ke `Downloads/ZIVAR`.
+
+## Memperbarui
+
+Buka **Tentang** (tombol versi di bagian bawah sidebar), klik **Periksa pembaruan**, lalu **Unduh dan pasang**. Setelah unduhan terverifikasi, **Pasang dan mulai ulang** menerapkannya:
+
+| Dipasang sebagai | Yang terjadi |
+| --- | --- |
+| Installer Windows | Installer baru terbuka dan ZIVAR menutup; selesaikan wizard lalu ZIVAR terbuka lagi. |
+| Portable Windows | Versi portable baru terbuka dan yang lama menutup. |
+| macOS | Disk image terbuka; seret aplikasi ke Applications. |
+| AppImage | Berkas AppImage diganti dan ZIVAR dimulai ulang. |
+| `.deb` / `.rpm` | Paket terbuka di aplikasi pemasang perangkat lunak Anda. |
 
 ## Pemecahan masalah
 

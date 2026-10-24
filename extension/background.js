@@ -1,3 +1,4 @@
+importScripts('i18n.js');
 const endpoint = 'http://127.0.0.1:18765';
 const mediaTypes = /^(video\/(mp4|webm|quicktime|x-m4v)|audio\/(mpeg|mp4|webm)|application\/(vnd\.apple\.mpegurl|x-mpegurl|dash\+xml))/i;
 const directPattern = /\.(mp4|webm|m4v|mov|mp3|m4a)(?:[?#]|$)/i;
@@ -78,7 +79,7 @@ function downloadFilename(download) {
 }
 function downloadId(value) {
   const id = Number(value);
-  if (!Number.isSafeInteger(id) || id < 0) throw new Error('ID download tidak valid.');
+  if (!Number.isSafeInteger(id) || id < 0) throw new Error(ZI.t('bg.badDownloadId'));
   return id;
 }
 async function pendingDownload(id) {
@@ -97,12 +98,12 @@ async function downloadItem(id) {
 }
 async function capturedDownloadInfo(id) {
   const record = await pendingDownload(id);
-  if (!record) throw new Error('Info download sudah tidak tersedia.');
+  if (!record) throw new Error(ZI.t('bg.infoGone'));
   if (record.detached) return record;
   const item = await downloadItem(id);
   if (!item || ['complete', 'interrupted'].includes(item.state)) {
     await removePendingDownload(id);
-    throw new Error('Download Chrome sudah tidak dapat dilanjutkan.');
+    throw new Error(ZI.t('bg.cannotResume'));
   }
   return { ...record, filename: record.filename || downloadFilename(item), state: item.state, bytesReceived: item.bytesReceived, totalBytes: item.totalBytes > 0 ? item.totalBytes : record.totalBytes, mime: item.mime || record.mime };
 }
@@ -331,11 +332,14 @@ async function readManifest(entry, referrer, tabId) {
 
 async function api(route, body) {
   const { token } = await chrome.storage.local.get('token');
-  if (!token) throw new Error('Hubungkan ekstensi dengan kode pairing dari aplikasi lokal.');
+  if (!token) throw new Error(ZI.t('bg.pairFirst'));
   let response;
   try { response = await fetch(endpoint + route, { method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Zivar-Client': 'extension' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(route === '/api/youtube/formats' ? 200000 : 10000) }); }
-  catch { throw new Error('Aplikasi lokal belum terhubung. Buka ZIVAR.exe terlebih dahulu.'); }
-  const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Aplikasi menolak permintaan.'); return data;
+  catch { throw new Error(ZI.t('bg.appOffline')); }
+  const data = await response.json();
+  const language = data?.settings?.language || data?.language;
+  if ((language === 'en' || language === 'id') && language !== ZI.language) { ZI.set(language); chrome.storage.local.set({ language }).catch(() => {}); }
+  if (!response.ok) throw new Error(data.error || ZI.t('bg.appRefused')); return data;
 }
 async function browserDownloadRules() {
   if (Date.now() - browserRulesCache.time < browserRulesTtl) return browserRulesCache;
@@ -359,7 +363,7 @@ function cleanDownloadFilename(value) {
 }
 async function startBrowserLinkDownload(message, sender) {
   const url = String(message.url || '');
-  if (!validUrl(url)) throw new Error('Tautan download tidak valid.');
+  if (!validUrl(url)) throw new Error(ZI.t('bg.badLink'));
   const filename = cleanDownloadFilename(message.filename);
   const probe = { url, finalUrl: url, filename, tabId: sender.tab.id };
   const { captureDownloads = true } = await chrome.storage.local.get('captureDownloads');
@@ -406,8 +410,8 @@ async function apiRaw(route, bytes) {
   const { token } = await chrome.storage.local.get('token');
   let response;
   try { response = await fetch(endpoint + route, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream', 'X-Zivar-Client': 'extension' }, body: bytes, signal: AbortSignal.timeout(60000) }); }
-  catch { throw new Error('Aplikasi lokal tidak merespons saat menerima data.'); }
-  const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Aplikasi menolak data.'); return data;
+  catch { throw new Error(ZI.t('bg.appNoResponse')); }
+  const data = await response.json(); if (!response.ok) throw new Error(data.error || ZI.t('bg.appRefusedData')); return data;
 }
 async function browserPlans() { return (await chrome.storage.local.get('browserJobs')).browserJobs || {}; }
 function savePlan(id, plan) {
@@ -429,7 +433,7 @@ async function uploadStream(id, key, response) {
   const flush = async () => {
     const bytes = new Blob(pieces); pieces = []; size = 0;
     state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${key}&offset=${offset}${total ? `&total=${total}` : ''}`, bytes);
-    if (state.conflict) throw new Error('Urutan data tidak cocok. Klik Lanjut di aplikasi untuk mencoba lagi.');
+    if (state.conflict) throw new Error(ZI.t('bg.order'));
     offset += bytes.size;
   };
   for (;;) {
@@ -441,18 +445,18 @@ async function uploadStream(id, key, response) {
   if (!total) await flush(); // empty piece = "file ended here" when the size was unknown
   return state;
 }
-const expiredHint = status => `Server video membalas HTTP ${status}. Tautan mungkin kedaluwarsa — pilih "Perbarui alamat unduhan" di ZIVAR, lalu klik Unduh lagi di halaman videonya.`;
+const expiredHint = status => ZI.t('bg.expired', { status });
 function fetchRange(url, offset) {
   return fetch(url, { headers: { range: `bytes=${offset}-${offset + CHUNK - 1}` }, credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(120000) })
     .then(async response => {
       if (response.status === 200 && offset === 0) return { stream: response };
-      if (response.status !== 206) { await response.body?.cancel().catch(() => {}); throw new Error(response.status === 200 ? 'Server tidak mendukung melanjutkan unduhan dari tengah file.' : expiredHint(response.status)); }
+      if (response.status !== 206) { await response.body?.cancel().catch(() => {}); throw new Error(response.status === 200 ? ZI.t('bg.noRange') : expiredHint(response.status)); }
       const range = /^bytes (\d+)-(\d+)\/(\d+|\*)$/.exec(response.headers.get('content-range') || '');
-      if (!range || Number(range[1]) !== offset) throw new Error('Server mengirim bagian file yang salah.');
+      if (!range || Number(range[1]) !== offset) throw new Error(ZI.t('bg.wrongPart'));
       const bytes = await response.arrayBuffer();
-      if (!bytes.byteLength) throw new Error('Server video tidak mengirim data.');
+      if (!bytes.byteLength) throw new Error(ZI.t('bg.noData'));
       return { bytes, total: range[3] === '*' ? null : Number(range[3]) };
-    }, () => { throw new Error('Koneksi ke server video terputus. Klik Lanjut untuk mencoba lagi.'); });
+    }, () => { throw new Error(ZI.t('bg.dropped')); });
 }
 // Plain file: while one piece is being handed to the app, the next one is already downloading.
 async function downloadRanges(id, source, state) {
@@ -464,7 +468,7 @@ async function downloadRanges(id, source, state) {
     const end = offset + piece.bytes.byteLength, more = piece.total ? end < piece.total : piece.bytes.byteLength >= CHUNK;
     const prefetch = more ? fetchRange(source.url, end) : null; prefetch?.catch(() => {});
     state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=${offset}${piece.total ? `&total=${piece.total}` : ''}`, piece.bytes);
-    if (state.conflict) throw new Error('Urutan data tidak cocok. Klik Lanjut di aplikasi untuk mencoba lagi.');
+    if (state.conflict) throw new Error(ZI.t('bg.order'));
     if (!piece.total && !more) state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=${end}`, new Blob([]));
     if (!activeStatus(state.status)) return state;
     offset = end; next = prefetch;
@@ -474,8 +478,8 @@ async function downloadRanges(id, source, state) {
 // ---- HLS (.m3u8) through the browser ----
 function hlsAttributes(text) { const result = {}; String(text).replace(/([A-Z0-9-]+)=("[^"]*"|[^,]*)/g, (_, key, value) => { result[key] = value.replace(/^"|"$/g, ''); return _; }); return result; }
 function parseMediaPlaylist(text, baseUrl) {
-  if (!/^#EXTM3U/.test(text.trim())) throw new Error('Playlist HLS tidak valid.');
-  if (/#EXT-X-STREAM-INF/i.test(text)) throw new Error('Pilih salah satu kualitas, bukan daftar kualitasnya.');
+  if (!/^#EXTM3U/.test(text.trim())) throw new Error(ZI.t('bg.badHls'));
+  if (/#EXT-X-STREAM-INF/i.test(text)) throw new Error(ZI.t('bg.pickOne'));
   const lines = text.split(/\r?\n/).map(line => line.trim());
   let sequence = 0, key = null, init = null, pendingRange = null, lastEnd = 0;
   const segments = [];
@@ -486,7 +490,7 @@ function parseMediaPlaylist(text, baseUrl) {
       const info = hlsAttributes(line.slice(11)), method = (info.METHOD || 'NONE').toUpperCase();
       if (method === 'NONE') key = null;
       else if (method === 'AES-128' && (!info.KEYFORMAT || info.KEYFORMAT === 'identity')) key = { uri: new URL(info.URI, baseUrl).href, iv: info.IV || null };
-      else throw new Error('Video ini dilindungi DRM. ZIVAR tidak dapat melewati sistem lisensinya.');
+      else throw new Error(ZI.t('bg.drm'));
     } else if (line.startsWith('#EXT-X-MAP:')) {
       const info = hlsAttributes(line.slice(11));
       init = { url: new URL(info.URI, baseUrl).href, range: info.BYTERANGE ? byteRange(info.BYTERANGE, 0) : null };
@@ -497,14 +501,14 @@ function parseMediaPlaylist(text, baseUrl) {
       segments.push({ url: new URL(line, baseUrl).href, range, key, sequence: sequence + segments.length });
     }
   }
-  if (!segments.length) throw new Error('Playlist HLS tidak berisi segmen.');
+  if (!segments.length) throw new Error(ZI.t('bg.noSegments'));
   return { segments, init };
 }
 const hexBytes = hex => Uint8Array.from(hex.replace(/^0x/i, '').padStart(32, '0').match(/../g).map(byte => parseInt(byte, 16)));
 async function fetchBytes(url, range) {
   let response;
   try { response = await fetch(url, { headers: range ? { range: `bytes=${range.start}-${range.end}` } : {}, credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(120000) }); }
-  catch { throw new Error('Koneksi ke server video terputus. Klik Lanjut untuk mencoba lagi.'); }
+  catch { throw new Error(ZI.t('bg.dropped')); }
   if (!response.ok) { await response.body?.cancel().catch(() => {}); throw new Error(expiredHint(response.status)); }
   return new Uint8Array(await response.arrayBuffer());
 }
@@ -527,7 +531,7 @@ async function downloadHls(id, source, state, plan) {
   else if (part.received) { state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=0&restart=1`, new Blob([])); }
   if (part.total && part.received === part.total) return state;
   const record = async (segment, bytes) => { plan.hls = { ...(plan.hls || {}), [source.key]: { segment, bytes } }; await savePlan(id, plan); };
-  if (index === 0 && init) { const bytes = await fetchBytes(init.url, init.range); state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=0`, bytes); offset = bytes.byteLength; if (state.conflict) throw new Error('Urutan data tidak cocok.'); }
+  if (index === 0 && init) { const bytes = await fetchBytes(init.url, init.range); state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=0`, bytes); offset = bytes.byteLength; if (state.conflict) throw new Error(ZI.t('bg.order')); }
   // Up to 4 segments download at once; they are handed to the app in order, ~4 MB per upload.
   const pending = []; let cursor = index;
   const fill = () => { while (pending.length < 4 && cursor < segments.length) { const promise = segmentBytes(segments[cursor++]); promise.catch(() => {}); pending.push(promise); } };
@@ -539,7 +543,7 @@ async function downloadHls(id, source, state, plan) {
     }
     fill();
     state = await apiRaw(`/api/browser-jobs/${id}/chunk?part=${source.key}&offset=${offset}`, new Blob(pieces));
-    if (state.conflict) throw new Error('Urutan data tidak cocok. Klik Lanjut di aplikasi untuk mencoba lagi.');
+    if (state.conflict) throw new Error(ZI.t('bg.order'));
     index += taken; offset += size; await record(index, offset);
     if (!activeStatus(state.status)) return state;
   }
@@ -566,7 +570,7 @@ async function resumeBrowserJobs() {
   for (const id of Object.keys(await browserPlans())) {
     let state;
     try { state = await api(`/api/browser-jobs/${id}`); }
-    catch (error) { if (/tidak ditemukan/i.test(error.message)) await savePlan(id, null); continue; }
+    catch (error) { if (/tidak ditemukan|not found/i.test(error.message)) await savePlan(id, null); continue; }
     if (state.status === 'completed' || state.status === 'cancelled') await savePlan(id, null);
     else if (activeStatus(state.status)) runBrowserJob(id);
   }
@@ -629,9 +633,12 @@ async function videoCandidates(sender) {
   const unique = [...new Map(items.filter(item => !isAd(item.url)).map(item => [item.url, item])).values()].slice(0, 40);
   return { items: unique, adsOnly: !unique.length && ads.length > 0 };
 }
+const createMenu = () => chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: 'zivar-download', title: ZI.t('bg.menu'), contexts: ['link', 'video', 'audio'] }));
+ZI.ready.then(createMenu);
+ZI.onChange.push(createMenu);
 chrome.runtime.onInstalled.addListener(details => {
   if (details.reason === 'install') chrome.storage.local.get('captureDownloads').then(data => { if (data.captureDownloads === undefined) return chrome.storage.local.set({ captureDownloads: true }); }).catch(() => {});
-  chrome.contextMenus.removeAll(() => chrome.contextMenus.create({ id: 'zivar-download', title: 'Unduh dengan ZIVAR', contexts: ['link', 'video', 'audio'] }));
+  createMenu();
 });
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== 'zivar-download') return;
@@ -639,8 +646,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const url = info.linkUrl || info.srcUrl;
     const credentials = await credentialsFor(tab?.id ?? -1, url);
     await api('/api/downloads', { url, headers: { ...credentials, referer: tab?.url || '' } });
-    await chrome.storage.local.set({ lastMessage: 'Tautan dikirim ke ZIVAR.', lastError: '' });
-    if (tab?.id >= 0) chrome.tabs.sendMessage(tab.id, { type: 'TOAST', text: 'Tautan dikirim ke ZIVAR.' }).catch(() => {});
+    await chrome.storage.local.set({ lastMessage: ZI.t('bg.linkSent'), lastError: '' });
+    if (tab?.id >= 0) chrome.tabs.sendMessage(tab.id, { type: 'TOAST', text: ZI.t('bg.linkSent') }).catch(() => {});
   } catch (error) {
     await chrome.storage.local.set({ lastError: error.message });
     if (tab?.id >= 0) chrome.tabs.sendMessage(tab.id, { type: 'TOAST', text: error.message }).catch(() => {});
@@ -698,8 +705,8 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       const candidates = await videoCandidates(sender);
       if (candidates.reason) throw new Error(candidates.reason);
       const candidate = candidates.items.find(item => item.url === message.url);
-      if (!candidate) throw new Error('Media belum terdeteksi untuk pemutar ini. Muat ulang halaman dan putar videonya.');
-      if (candidate.drm) throw new Error('Media ini dilindungi DRM. ZIVAR tidak dapat melewati sistem lisensinya.');
+      if (!candidate) throw new Error(ZI.t('bg.noMedia'));
+      if (candidate.drm) throw new Error(ZI.t('bg.drmMedia'));
       if (candidate.youtube) {
         const data = await api('/api/downloads', { url:candidate.pageUrl, youtubeFormat:candidate.formatId, filename:candidate.title + '-' + candidate.height + 'p.mp4' });
         return { ok:true, id:data.id, filename:data.filename };
@@ -734,7 +741,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
         const data = await api('/api/media', { manifestUrl: candidate.manifestUrl || candidate.url, variantUrl: candidate.url, audioUrl: candidate.audioUrl || null, manifestType: candidate.manifestType || 'HLS', filename: `${base}${quality}.mp4`, metadata: { width: candidate.width, height: candidate.height, duration: candidate.duration, bandwidth: candidate.bandwidth, averageBandwidth: candidate.averageBandwidth, codecs: candidate.codecs, size: candidate.size, sizeEstimated: candidate.sizeEstimated }, headers: { ...credentials, referer: sender.url }, audioHeaders: { ...audioCredentials, referer: sender.url } });
         return { ok: true, id: data.id, filename: data.filename };
       }
-      if (candidate.stream) throw new Error('Pengunduhan stream HLS/DASH belum didukung.');
+      if (candidate.stream) throw new Error(ZI.t('bg.streamUnsupported'));
       const credentials = await credentialsFor(sender.tab.id, candidate.url);
       if (await blockedForApp(candidate.url, { ...credentials, referer: sender.url })) {
         const data = await startBrowserJob({ filename: null, parts: [{ key: 'file', url: candidate.url }], pageUrl: sender.url });
@@ -758,22 +765,22 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     const pageUrl = String(sender.url || '');
     const isPopup = sender.id === chrome.runtime.id && (pageUrl === popupUrl || pageUrl.startsWith(`${popupUrl}?`));
     const isDownloadInfo = sender.id === chrome.runtime.id && (pageUrl === downloadInfoUrl || pageUrl.startsWith(`${downloadInfoUrl}?`));
-    if (!isPopup && !isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+    if (!isPopup && !isDownloadInfo) throw new Error(ZI.t('bg.sender'));
     if (message.type === 'DOWNLOAD_INFO') {
-      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
       return { ok: true, data: await capturedDownloadInfo(downloadId(message.id)) };
     }
     if (message.type === 'DOWNLOAD_INFO_START') {
-      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
       return { ok: true, data: await startCapturedDownload(downloadId(message.id)) };
     }
     if (message.type === 'DOWNLOAD_INFO_RESUME') {
-      if (!isDownloadInfo) throw new Error('Pengirim tidak diizinkan.');
+      if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
       return { ok: true, data: await resumeCapturedDownload(downloadId(message.id)) };
     }
-    if (!isPopup) throw new Error('Pengirim tidak diizinkan.');
+    if (!isPopup) throw new Error(ZI.t('bg.sender'));
     if (message.type === 'PAIR') {
-      if (!/^[a-f0-9]{48}$/.test(message.token || '')) throw new Error('Format kode pairing tidak valid.');
+      if (!/^[a-f0-9]{48}$/.test(message.token || '')) throw new Error(ZI.t('bg.badToken'));
       await chrome.storage.local.set({ token: message.token });
       await api('/api/state'); await chrome.storage.local.set({ lastError: '' }); return { ok: true };
     }
@@ -784,7 +791,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
       const data = await api('/api/downloads', { url: message.url, headers: { ...credentials, referer: message.referrer || '' } });
       return { ok: true, data };
     }
-    throw new Error('Pesan tidak dikenali.');
+    throw new Error(ZI.t('bg.unknown'));
   })().then(reply, error => reply({ ok: false, error: error.message }));
   return true;
 });

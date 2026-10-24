@@ -41,9 +41,11 @@ Menjalankan workflow lewat **Actions → Release → Run workflow** hanya memban
 
 ## Pembaruan dalam aplikasi
 
-`latest.json` memuat satu installer per platform (`win32-x64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`)
-dengan SHA-256-nya. Arahkan `zivar.updateFeed` di `package.json` ke
-`https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json` agar aplikasi memeriksanya.
+`latest.json` memuat installer per platform dan jenis pemasangan, masing-masing dengan SHA-256-nya: `win32-x64` (setup) dan
+`win32-x64-portable`, `darwin-arm64` / `darwin-x64` (DMG), serta `linux-x64` / `linux-arm64` (AppImage) dengan varian
+`-deb` dan `-rpm`. Aplikasi membacanya dari `zivar.updateFeed` di `package.json`, yang sudah menunjuk ke
+`https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json`, lalu memilih entri yang cocok dengan
+cara pemasangannya (lihat `desktop/updater.mjs`). Jadi rilis baru langsung sampai ke salinan yang terpasang begitu dipublikasikan.
 
 ## Penandatanganan (belum diatur)
 

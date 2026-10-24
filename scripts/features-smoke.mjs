@@ -34,7 +34,7 @@ try {
   browser = await chromium.launch({ channel: 'chrome', headless: true });
   const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   const errors = []; page.on('pageerror', error => errors.push(error.message)); page.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
-  await page.goto(app.origin); await page.locator('#connection').filter({ hasText: 'Terhubung lokal' }).waitFor();
+  await page.goto(app.origin); await page.locator('#connection').filter({ hasText: 'Connected locally' }).waitFor();
 
   // Settings: one download at a time.
   await page.locator('#show-settings').click();
@@ -54,7 +54,7 @@ try {
   // Batch add with a numeric pattern.
   await page.locator('#tb-add').click(); await page.locator('#tab-batch').click();
   await page.locator('#batch-urls').fill(`${origin}/files/part[1-3].bin`);
-  await page.locator('#batch-preview').filter({ hasText: '3 tautan' }).waitFor();
+  await page.locator('#batch-preview').filter({ hasText: '3 links' }).waitFor();
   await page.locator('#add-button').click();
   await page.waitForFunction(() => document.querySelectorAll('.job .badge.completed').length === 3, null, { timeout: 20000 });
   assert.deepEqual(app.manager.jobs.map(job => job.filename).sort(), ['part1.bin', 'part2.bin', 'part3.bin']);
@@ -67,7 +67,7 @@ try {
 
   // Checksum dialog compares with a value from the "website".
   await row(page, 'part2.bin').click({ button: 'right' });
-  await page.locator('#context-menu').getByRole('menuitem', { name: 'Verifikasi checksum…' }).click();
+  await page.locator('#context-menu').getByRole('menuitem', { name: 'Verify checksum…' }).click();
   await page.locator('#checksum-run').click();
   const expected = createHash('sha256').update(small).digest('hex');
   await page.waitForFunction(value => document.querySelector('#checksum-result').value === value, expected);
@@ -83,15 +83,15 @@ try {
     await page.waitForFunction(() => !document.querySelector('#add-dialog').open);
   }
   await row(page, 's1.bin').locator('.badge.downloading').waitFor();
-  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.children[1].textContent === '2');
+  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.meta-q').textContent === '#2');
   await row(page, 's3.bin').click();
-  await page.locator('.menu-trigger', { hasText: 'Unduhan' }).click();
-  await page.getByRole('menuitem', { name: 'Pindahkan ke awal antrean' }).click();
-  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.children[1].textContent === '1');
+  await row(page, 's3.bin').click({ button: 'right' });
+  await page.locator('#context-menu').getByRole('menuitem', { name: 'Move to front of queue' }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('.job')].find(r => r.textContent.includes('s3.bin'))?.querySelector('.meta-q').textContent === '#1');
 
   // Refresh address of the running download by pasting a new link.
   await row(page, 's1.bin').click({ button: 'right' });
-  await page.locator('#context-menu').getByRole('menuitem', { name: 'Perbarui alamat unduhan…' }).click();
+  await page.locator('#context-menu').getByRole('menuitem', { name: 'Refresh download address…' }).click();
   await page.locator('#refresh-dialog[open]').waitFor();
   assert.ok(app.manager.refreshState(), 'Opening the dialog arms the refresh');
   await page.locator('#refresh-url').fill(`${origin}/slow/s1.bin?token=fresh`);
@@ -101,9 +101,9 @@ try {
   assert.equal(s1.url, `${origin}/slow/s1.bin?token=fresh`); assert.ok(s1.refreshedAt);
 
   // "After all downloads" choice from the menu, shown in the status bar.
-  await page.locator('.menu-trigger', { hasText: 'Unduhan' }).click();
-  await page.getByRole('menuitemradio', { name: 'Tutup ZIVAR' }).click();
-  await page.locator('#after-all-status').filter({ hasText: 'Tutup ZIVAR' }).waitFor();
+  await page.locator('#menu-tasks').click();
+  await page.getByRole('menuitemradio', { name: 'Close ZIVAR' }).click();
+  await page.locator('#after-all-status').filter({ hasText: 'Close ZIVAR' }).waitFor();
   assert.equal(app.manager.settings().afterAll, 'quit');
   assert.equal(await page.locator('[data-after="shutdown"]').isVisible(), false, 'Shutdown is a desktop-only option');
 

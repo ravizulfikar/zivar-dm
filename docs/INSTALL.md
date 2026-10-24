@@ -78,12 +78,24 @@ See **Installing the browser extension** in the [README](../README.md). The exte
 | macOS | `~/Library/Application Support/ZIVAR Download Manager/browser-extension` |
 | Linux | `~/.config/ZIVAR Download Manager/browser-extension` |
 
-The tray menu item **Folder ekstensi Chrome** opens that folder directly.
+The tray menu item **Browser extension folder** opens that folder directly.
 
 ## Data location
 
 The queue, settings, pairing token and log (`desktop.log`) are stored in the app data folder
 (the parent of the extension folder above). Downloaded files go to `Downloads/ZIVAR` by default.
+
+## Updating
+
+Open **About** (the version button at the bottom of the sidebar), click **Check for updates**, then **Download and install**. When the download is verified, **Install and restart** applies it:
+
+| Installed as | What happens |
+| --- | --- |
+| Windows installer | The new installer opens and ZIVAR closes; finish the wizard and ZIVAR starts again. |
+| Windows portable | The new portable version opens and the old one closes. |
+| macOS | The disk image opens; drag the app to Applications. |
+| AppImage | The AppImage file is replaced and ZIVAR restarts. |
+| `.deb` / `.rpm` | The package opens in your software installer. |
 
 ## Troubleshooting
 

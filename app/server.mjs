@@ -6,9 +6,10 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { DownloadManager, CATEGORIES } from './manager.mjs';
+import { translateMessage } from './messages.mjs';
 
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
 const json = (res, code, value) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); };
 async function body(req, limit = 64 * 1024) {
   const chunks = []; let size = 0;
@@ -46,6 +47,8 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
     await fs.writeFile(path.join(dataDirectory, 'token'), token, { mode: 0o600 });
   }
   const manager = await new DownloadManager({ dataDirectory, downloadDirectory }).init();
+  // Engine messages are Indonesian; translate them when the interface language is English.
+  const tr = text => translateMessage(text, manager.settings().language);
   manager.on('storage-error', error => console.error('Gagal menyimpan antrean:', error.message));
   // YouTube extractor: an updatable copy in the data folder, checked weekly when enabled.
   const extractor = { version: null, checking: false, lastCheck: null, lastResult: null };
@@ -79,11 +82,11 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
     res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     try {
-      if (req.headers.host !== new URL(origin).host) return json(res, 403, { error: 'Host tidak diizinkan. Gunakan alamat 127.0.0.1 aplikasi.' });
+      if (req.headers.host !== new URL(origin).host) return json(res, 403, { error: tr('Host tidak diizinkan. Gunakan alamat 127.0.0.1 aplikasi.') });
       const caller = req.headers.origin;
       // Chrome/Edge extension IDs, or a Firefox extension's per-install UUID.
       const extension = typeof caller === 'string' && /^(chrome-extension:\/\/[a-p]{32}|moz-extension:\/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/.test(caller);
-      if (caller && caller !== origin && !extension) return json(res, 403, { error: 'Origin tidak diizinkan.' });
+      if (caller && caller !== origin && !extension) return json(res, 403, { error: tr('Origin tidak diizinkan.') });
       if (extension) {
         res.setHeader('Access-Control-Allow-Origin', caller);
         res.setHeader('Vary', 'Origin');
@@ -96,9 +99,9 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
       }
       const url = new URL(req.url, origin);
       if (url.pathname.startsWith('/api/')) {
-        if (!equals(req.headers.authorization, `Bearer ${token}`)) return json(res, 401, { error: 'Kode pairing tidak cocok. Salin ulang dari aplikasi lokal.' });
+        if (!equals(req.headers.authorization, `Bearer ${token}`)) return json(res, 401, { error: tr('Kode pairing tidak cocok. Salin ulang dari aplikasi lokal.') });
         if (extension || req.headers['x-zivar-client'] === 'extension') extensionLastSeen = Date.now();
-        if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, { jobs: manager.list(), downloadDirectory, concurrency: manager.concurrency, connections: manager.connections, settings: manager.settings(), categories: CATEGORIES, version, refreshPending: manager.refreshState(), desktopFeatures: Boolean(onFocus), browserIntegration: { connected: extensionLastSeen !== null && Date.now() - extensionLastSeen < 300000, lastSeenAt: extensionLastSeen } });
+        if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, { jobs: manager.list().map(job => job.error ? { ...job, error: tr(job.error) } : job), downloadDirectory, concurrency: manager.concurrency, connections: manager.connections, settings: manager.settings(), categories: CATEGORIES, version, refreshPending: manager.refreshState(), desktopFeatures: Boolean(onFocus), browserIntegration: { connected: extensionLastSeen !== null && Date.now() - extensionLastSeen < 300000, lastSeenAt: extensionLastSeen } });
         if (req.method === 'GET' && url.pathname === '/api/settings') return json(res, 200, manager.settings());
         if (req.method === 'POST' && url.pathname === '/api/settings') return json(res, 200, await manager.updateSettings(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/focus') { onFocus?.(); return json(res, 200, { desktop: Boolean(onFocus) }); }
@@ -108,13 +111,13 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
           const { items = [] } = await body(req, 2 * 1024 * 1024);
           if (!Array.isArray(items) || !items.length || items.length > 1000) throw new Error('Daftar tautan harus berisi 1–1000 item.');
           const results = [];
-          for (const item of items) { try { results.push({ ok: true, id: (await manager.add(item)).id }); } catch (error) { results.push({ ok: false, url: String(item?.url || '').slice(0, 300), error: error.message }); } }
+          for (const item of items) { try { results.push({ ok: true, id: (await manager.add(item)).id }); } catch (error) { results.push({ ok: false, url: String(item?.url || '').slice(0, 300), error: tr(error.message) }); } }
           return json(res, 200, { added: results.filter(result => result.ok).length, failed: results.filter(result => !result.ok) });
         }
         if (req.method === 'POST' && url.pathname === '/api/youtube/formats') return json(res, 200, await inspectYoutube((await body(req)).url));
         if (req.method === 'POST' && url.pathname === '/api/youtube/playlist') return json(res, 200, await inspectPlaylist((await body(req)).url));
-        if (req.method === 'GET' && url.pathname === '/api/extractor') return json(res, 200, { ...extractor, available: extractorUpdates });
-        if (req.method === 'POST' && url.pathname === '/api/extractor/update') return json(res, 200, { ...await runExtractorUpdate(), available: extractorUpdates });
+        if (req.method === 'GET' && url.pathname === '/api/extractor') return json(res, 200, { ...extractor, lastResult: tr(extractor.lastResult), available: extractorUpdates });
+        if (req.method === 'POST' && url.pathname === '/api/extractor/update') return json(res, 200, { ...await runExtractorUpdate(), lastResult: tr(extractor.lastResult), available: extractorUpdates });
         if (req.method === 'POST' && url.pathname === '/api/media') return json(res, 201, await manager.addMedia(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/grabber') return json(res, 200, await manager.grabSite(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/probe') return json(res, 200, await manager.probeAccess(await body(req)));
@@ -146,17 +149,17 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
           }
           return json(res, 200, { path: downloadDirectory });
         }
-        return json(res, 404, { error: 'Endpoint tidak ditemukan.' });
+        return json(res, 404, { error: tr('Endpoint tidak ditemukan.') });
       }
-      if (req.method !== 'GET') return json(res, 405, { error: 'Metode tidak didukung.' });
-      const files = { '/': 'index.html', '/app.js': 'app.js', '/style.css': 'style.css' };
+      if (req.method !== 'GET') return json(res, 405, { error: tr('Metode tidak didukung.') });
+      const files = { '/': 'index.html', '/app.js': 'app.js', '/i18n.js': 'i18n.js', '/style.css': 'style.css', '/logo.svg': 'logo.svg' };
       const filename = files[url.pathname];
-      if (!filename) return json(res, 404, { error: 'Halaman tidak ditemukan.' });
+      if (!filename) return json(res, 404, { error: tr('Halaman tidak ditemukan.') });
       let contents = await fs.readFile(path.join(project, 'app', 'public', filename));
       if (filename === 'index.html') contents = Buffer.from(contents.toString().replaceAll('__PAIRING_TOKEN__', token).replaceAll('__APP_VERSION__', version));
       res.writeHead(200, { 'Content-Type': mime[path.extname(filename)] }); res.end(contents);
     } catch (error) {
-      if (!res.headersSent) json(res, 400, { error: error.message }); else res.end();
+      if (!res.headersSent) json(res, 400, { error: tr(error.message) }); else res.end();
     }
   });
   server.requestTimeout = 30_000;

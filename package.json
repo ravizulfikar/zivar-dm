@@ -1,14 +1,19 @@
 {
   "name": "zivar-download-manager",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "private": true,
   "zivar": {
-    "updateFeed": ""
+    "updateFeed": "https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json"
   },
   "type": "module",
   "description": "Download manager for Windows, macOS and Linux with a browser companion extension",
   "author": "ZIVAR",
   "license": "MIT",
+  "homepage": "https://zivar.my.id",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravizulfikar/zivar-dm.git"
+  },
   "main": "desktop/main.mjs",
   "scripts": {
     "start": "electron .",

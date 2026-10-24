@@ -41,9 +41,11 @@ Running the workflow from **Actions → Release → Run workflow** only builds a
 
 ## In-app updates
 
-`latest.json` lists one installer per platform (`win32-x64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`)
-with its SHA-256. Point `zivar.updateFeed` in `package.json` at
-`https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json` so the app checks it.
+`latest.json` lists the installers per platform and install kind, each with its SHA-256: `win32-x64` (setup) and
+`win32-x64-portable`, `darwin-arm64` / `darwin-x64` (DMG), and `linux-x64` / `linux-arm64` (AppImage) with
+`-deb` and `-rpm` variants. The app reads it from `zivar.updateFeed` in `package.json`, which already points at
+`https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json`, and picks the entry that matches how
+it was installed (see `desktop/updater.mjs`). A release therefore reaches installed copies as soon as it is published.
 
 ## Code signing (not set up yet)
 

@@ -6,6 +6,8 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { startServer } from '../app/server.mjs';
 import { normalizeProxy } from '../app/manager.mjs';
+import { translator } from './strings.mjs';
+import { isNewer, installKind, installGroup, pickAsset, safeFilename } from './updater.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const project = path.dirname(directory);
@@ -52,6 +54,12 @@ delete process.env.ZIVAR_PROXY_RELAUNCH;
 // Test hook: record notifications and power actions instead of performing them.
 const testLog = process.env.ZIVAR_TEST_POWER_LOG || '';
 const record = line => { if (testLog) try { appendFileSync(testLog, line + '\n'); } catch {} };
+
+// Language of the shell's own text: the interface language saved in the app settings.
+function savedLanguage() {
+  try { return JSON.parse(readFileSync(path.join(dataDirectory, 'settings.json'), 'utf8')).language === 'id' ? 'id' : 'en'; } catch { return 'en'; }
+}
+const tr = translator(() => service?.manager?.settings().language || savedLanguage());
 
 async function log(error) {
   try { await fs.mkdir(dataDirectory, { recursive: true }); await fs.appendFile(path.join(dataDirectory, 'desktop.log'), `${new Date().toISOString()} ${error.stack || error}\n`); } catch {}
@@ -126,8 +134,8 @@ function watchJobs() {
     if (BUSY.includes(job.status)) hadWork = true;
     if (previous === job.status) return;
     const settings = manager.settings();
-    if (settings.notifications && job.status === 'completed' && previous) notify('Unduhan selesai', job.filename);
-    if (settings.notifications && job.status === 'error' && previous) notify('Unduhan gagal', `${job.filename}: ${job.error || 'Klik Lanjut untuk mencoba lagi.'}`);
+    if (settings.notifications && job.status === 'completed' && previous) notify(tr('notify.done'), job.filename);
+    if (settings.notifications && job.status === 'error' && previous) notify(tr('notify.failed'), `${job.filename}: ${job.error || tr('notify.retry')}`);
     // Wait a moment so a queue that is just switching jobs is not mistaken for "done".
     setTimeout(checkAllDone, 1500);
   });
@@ -153,18 +161,18 @@ const powerCommands = {
   linux: { shutdown: ['systemctl', ['poweroff']], sleep: ['systemctl', ['suspend']] },
 }[process.platform] || {};
 async function runAfterAll(action) {
-  const labels = { quit: 'menutup ZIVAR', sleep: 'membuat komputer tidur (sleep)', shutdown: 'mematikan komputer' };
+  const labels = { quit: tr('after.quit'), sleep: tr('after.sleep'), shutdown: tr('after.shutdown') };
   record(`after-all:${action}`);
   if (action === 'quit') { quitting = true; app.quit(); return; }
   if (testLog) return;
   const command = powerCommands[action];
-  if (!command) { notify('Aksi tidak didukung', `Sistem ini tidak mendukung aksi "${labels[action]}".`); return; }
+  if (!command) { notify(tr('after.unsupported'), tr('after.unsupportedBody', { action: labels[action] })); return; }
   // 60-second countdown with a Cancel button.
   const controller = new AbortController(); let seconds = 60;
   if (isWindows && action === 'shutdown') run('shutdown.exe', ['/s', '/t', '60', '/c', 'ZIVAR: semua unduhan selesai. Komputer akan dimatikan.']);
   const timer = setInterval(() => { seconds--; if (seconds <= 0) controller.abort(); }, 1000);
   showWindow();
-  const answer = await dialog.showMessageBox(window, { type: 'warning', title: 'Semua unduhan selesai', message: `ZIVAR akan ${labels[action]} dalam 60 detik.`, detail: 'Klik Batalkan untuk membatalkan.', buttons: ['Batalkan', 'Lakukan sekarang'], defaultId: 1, cancelId: 0, noLink: true, signal: controller.signal });
+  const answer = await dialog.showMessageBox(window, { type: 'warning', title: tr('after.title'), message: tr('after.message', { action: labels[action] }), detail: tr('after.detail'), buttons: [tr('after.cancel'), tr('after.now')], defaultId: 1, cancelId: 0, noLink: true, signal: controller.signal });
   clearInterval(timer);
   const cancelled = !controller.signal.aborted && answer.response === 0;
   if (cancelled) { if (isWindows && action === 'shutdown') run('shutdown.exe', ['/a']); return; }
@@ -172,46 +180,105 @@ async function runAfterAll(action) {
   else if (!(isWindows && action === 'shutdown')) run(...command);
 }
 // ---- App updates ----
-// The feed is a small JSON file you publish: {"version":"0.15.0","url":"https://…/ZIVAR-Setup-0.15.0.exe","sha256":"…","notes":"…"}.
-// Set it in package.json ("zivar": {"updateFeed": "https://…/latest.json"}) or ZIVAR_UPDATE_FEED.
-// The installer is downloaded through ZIVAR's own queue and checked against the SHA-256; it is never run silently.
+// The feed is a small JSON file published with every release (latest.json). The update runs as a
+// small state machine owned by this process: check → download (through ZIVAR's own queue, verified
+// against SHA-256) → install. Installing is always started by the user's click.
+// Set the feed in package.json ("zivar": {"updateFeed": "https://…/latest.json"}) or ZIVAR_UPDATE_FEED.
 const appPackage = (() => { try { return JSON.parse(readFileSync(path.join(project, 'package.json'), 'utf8')); } catch { return {}; } })();
 const updateFeed = process.env.ZIVAR_UPDATE_FEED || appPackage.zivar?.updateFeed || '';
-const isNewer = (a, b) => { const x = a.split('.').map(Number), y = b.split('.').map(Number); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
-async function checkUpdate() {
-  if (!updateFeed) return { configured: false, current: app.getVersion() };
+const kind = installKind();
+let update = { phase: 'idle', current: app.getVersion(), installKind: installGroup(kind) }, updateJobId = null, updateAsset = null;
+const setUpdate = patch => { update = { ...update, ...patch }; return update; };
+function updateSnapshot() {
+  const job = updateJobId ? service?.manager?.jobs.find(item => item.id === updateJobId) : null;
+  // The user removed the update download from the list: offer it again instead of showing a stale state.
+  if (updateJobId && !job && ['downloading', 'ready'].includes(update.phase)) { updateJobId = null; setUpdate({ phase: 'available', progress: 0 }); }
+  if (job && update.phase === 'downloading') return { ...update, progress: job.total ? Math.min(100, 100 * job.received / job.total) : 0 };
+  return { ...update };
+}
+async function fetchFeed() {
   let response;
-  try { response = await fetch(updateFeed, { cache: 'no-store', signal: AbortSignal.timeout(15000) }); } catch { throw new Error('Server pembaruan tidak dapat dihubungi.'); }
-  if (!response.ok) throw new Error(`Server pembaruan membalas HTTP ${response.status}.`);
+  try { response = await fetch(updateFeed, { cache: 'no-store', signal: AbortSignal.timeout(15000) }); } catch { throw new Error(tr('err.feedUnreachable')); }
+  if (!response.ok) throw new Error(tr('err.feedStatus', { status: response.status }));
   const info = await response.json().catch(() => ({}));
-  if (!/^\d+\.\d+\.\d+$/.test(info.version || '')) throw new Error('Info pembaruan tidak valid.');
-  // A feed may list one installer per platform: {"platforms":{"win32-x64":{"url":"…","sha256":"…"}}}.
-  const platform = info.platforms?.[`${process.platform}-${process.arch}`];
-  if (info.platforms && !platform) return { configured: true, current: app.getVersion(), version: info.version, available: false, notes: '', unsupported: true };
-  if (platform) Object.assign(info, { url: platform.url, sha256: platform.sha256 });
-  const url = new URL(info.url || '', updateFeed);
+  if (!/^\d+\.\d+\.\d+$/.test(info.version || '')) throw new Error(tr('err.feedInvalid'));
+  const asset = pickAsset(info, { kind });
+  if (info.platforms && !asset) return { info, asset: null };
+  const url = new URL(asset?.url || '', updateFeed);
   const local = ['127.0.0.1', 'localhost'].includes(url.hostname);
-  if (url.protocol !== 'https:' && !(local && url.protocol === 'http:')) throw new Error('Alamat installer pembaruan harus memakai HTTPS.');
-  if (!/^[a-f0-9]{64}$/i.test(info.sha256 || '')) throw new Error('Info pembaruan tidak menyertakan checksum SHA-256.');
-  return { configured: true, current: app.getVersion(), version: info.version, available: isNewer(info.version, app.getVersion()), notes: String(info.notes || '').slice(0, 2000), url: url.href, sha256: info.sha256.toLowerCase() };
+  if (url.protocol !== 'https:' && !(local && url.protocol === 'http:')) throw new Error(tr('err.feedHttps'));
+  if (!/^[a-f0-9]{64}$/i.test(asset?.sha256 || '')) throw new Error(tr('err.feedChecksum'));
+  return { info, asset: { url: url.href, sha256: asset.sha256.toLowerCase() } };
+}
+async function checkUpdate({ automatic = false } = {}) {
+  if (!updateFeed) return setUpdate({ phase: 'unconfigured', error: null });
+  updateSnapshot();
+  if (['downloading', 'ready'].includes(update.phase)) return updateSnapshot();
+  setUpdate({ phase: 'checking', error: null });
+  try {
+    const { info, asset } = await fetchFeed();
+    if (!asset) return setUpdate({ phase: 'unsupported', version: info.version });
+    if (!isNewer(info.version, app.getVersion())) return setUpdate({ phase: 'uptodate', version: info.version, notes: '' });
+    updateAsset = asset;
+    setUpdate({ phase: 'available', version: info.version, notes: String(info.notes || '').slice(0, 2000), progress: 0 });
+    if (automatic) {
+      notify(tr('notify.updateAvailable'), tr('notify.updateAvailableBody', { v: info.version }));
+      if (service?.manager?.settings().autoUpdate !== false) await downloadUpdate().catch(log);
+    }
+    return updateSnapshot();
+  } catch (error) { await log(error); return setUpdate({ phase: 'error', error: error.message }); }
 }
 async function downloadUpdate() {
-  const info = await checkUpdate();
-  if (!info.available) throw new Error('ZIVAR sudah versi terbaru.');
-  if (!service.manager) throw new Error('Unduh pembaruan dari mesin ZIVAR desktop.');
-  const extension = path.extname(new URL(info.url).pathname).toLowerCase();
-  const name = /^\.(exe|dmg|deb|rpm|appimage|zip|gz)$/.test(extension) ? `ZIVAR-Setup-${info.version}${extension}` : `ZIVAR-Setup-${info.version}${isWindows ? '.exe' : ''}`;
-  return service.manager.add({ url: info.url, filename: name, expectedSha256: info.sha256, category: 'program' });
+  if (update.phase === 'downloading' || update.phase === 'ready') return updateSnapshot();
+  if (update.phase !== 'available' || !updateAsset) await checkUpdate();
+  if (update.phase !== 'available') throw new Error(update.error || tr('err.upToDate'));
+  if (!service?.manager) throw new Error(tr('err.noEngine'));
+  const job = await service.manager.add({ url: updateAsset.url, filename: safeFilename(updateAsset.url, update.version, kind), expectedSha256: updateAsset.sha256, category: 'program' });
+  updateJobId = job.id;
+  setUpdate({ phase: 'downloading', progress: 0, error: null });
+  return updateSnapshot();
+}
+// Called for every job change: moves the update from "downloading" to "ready" or back.
+function watchUpdate(job) {
+  if (job.id !== updateJobId) return;
+  if (job.status === 'completed') { setUpdate({ phase: 'ready', progress: 100 }); notify(tr('notify.updateReady'), tr('notify.updateReadyBody', { v: update.version })); }
+  else if (job.status === 'error') { setUpdate({ phase: 'error', error: job.error || tr('err.updateFailed') }); updateJobId = null; }
+  else if (job.status === 'cancelled') { setUpdate({ phase: 'available', progress: 0 }); updateJobId = null; }
+}
+// Starts a program a few seconds after this app has quit, so a single-instance lock is free again.
+function startLater(file) {
+  const child = process.platform === 'win32'
+    ? spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', 'Start-Sleep -Seconds 2; Start-Process -FilePath $env:ZIVAR_NEXT'], { detached: true, stdio: 'ignore', windowsHide: true, env: { ...process.env, ZIVAR_NEXT: file } })
+    : spawn('/bin/sh', ['-c', 'sleep 2; exec "$ZIVAR_NEXT"'], { detached: true, stdio: 'ignore', env: { ...process.env, ZIVAR_NEXT: file } });
+  child.on('error', log); child.unref();
+}
+const quitSoon = () => { quitting = true; setTimeout(() => app.quit(), 400); };
+async function installUpdate() {
+  const job = service?.manager?.jobs.find(item => item.id === updateJobId);
+  if (update.phase !== 'ready' || !job || job.status !== 'completed') throw new Error(tr('err.notReady'));
+  const file = path.resolve(job.outputPath || '');
+  if (!file.startsWith(path.resolve(service.downloadDirectory) + path.sep)) throw new Error(tr('err.path'));
+  await fs.access(file).catch(() => { throw new Error(tr('err.updateMissing')); });
+  record(`install:${kind}:${path.basename(file)}`);
+  if (testLog) return updateSnapshot();
+  try {
+    if (kind === 'setup') { const child = spawn(file, [], { detached: true, stdio: 'ignore' }); child.on('error', log); child.unref(); quitSoon(); }
+    else if (kind === 'portable') { await fs.chmod(file, 0o755).catch(() => {}); startLater(file); quitSoon(); }
+    else if (kind === 'appimage') {
+      const target = process.env.APPIMAGE, staged = `${target}.new`;
+      await fs.copyFile(file, staged); await fs.chmod(staged, 0o755); await fs.rename(staged, target);
+      startLater(target); quitSoon();
+    } else if (kind === 'dmg' || kind === 'deb' || kind === 'rpm') { const error = await shell.openPath(file); if (error) throw new Error(error); }
+    else shell.showItemInFolder(file);
+  } catch (error) { throw new Error(tr('err.installFailed', { error: error.message })); }
+  return updateSnapshot();
 }
 async function backgroundUpdateCheck() {
   if (!updateFeed || process.env.ZIVAR_DESKTOP_TEST_MODE === '1') return;
   const marker = path.join(dataDirectory, 'update-check.json');
-  try { const last = JSON.parse(await fs.readFile(marker, 'utf8')); if (Date.now() - Date.parse(last.checkedAt) < 3 * 86400_000) return; } catch {}
-  try {
-    const info = await checkUpdate();
-    await fs.writeFile(marker, JSON.stringify({ checkedAt: new Date().toISOString(), version: info.version }));
-    if (info.available) notify('Pembaruan ZIVAR tersedia', `Versi ${info.version} siap diunduh. Buka Bantuan → Periksa pembaruan.`);
-  } catch (error) { await log(error); }
+  try { const last = JSON.parse(await fs.readFile(marker, 'utf8')); if (Date.now() - Date.parse(last.checkedAt) < 6 * 3600_000) return; } catch {}
+  await fs.writeFile(marker, JSON.stringify({ checkedAt: new Date().toISOString() })).catch(() => {});
+  await checkUpdate({ automatic: true });
 }
 
 // ---- Start at login ----
@@ -240,19 +307,19 @@ const startHidden = process.argv.includes('--hidden');
 function trusted(event) { return event.sender === window?.webContents && event.senderFrame?.url === service?.origin + '/'; }
 function installBridge() {
   ipcMain.handle('zivar:info', event => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
-    return { isDesktop: true, attached: service.attached, extensionDirectory, downloadDirectory: service.downloadDirectory, version: app.getVersion(), showSetup: setupPending };
+    if (!trusted(event)) throw new Error(tr('err.sender'));
+    return { isDesktop: true, attached: service.attached, extensionDirectory, downloadDirectory: service.downloadDirectory, version: app.getVersion(), showSetup: setupPending, platform: process.platform, arch: process.arch, versions: { electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node } };
   });
   ipcMain.handle('zivar:copy', (event, text) => {
-    if (!trusted(event) || typeof text !== 'string' || text.length > 4096) throw new Error('Permintaan clipboard tidak valid.');
+    if (!trusted(event) || typeof text !== 'string' || text.length > 4096) throw new Error(tr('err.clipboard'));
     clipboard.writeText(text); return true;
   });
   ipcMain.handle('zivar:extension-folder', async event => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     const error = await shell.openPath(extensionDirectory); if (error) throw new Error(error); return true;
   });
   ipcMain.handle('zivar:setup-complete', async event => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     const destination = path.join(dataDirectory, 'setup-completed.json');
     await fs.writeFile(destination + '.tmp', JSON.stringify({ version: 1, completedAt: new Date().toISOString() }));
     await fs.rename(destination + '.tmp', destination);
@@ -262,34 +329,42 @@ function installBridge() {
   // scripts are never launched from here; they are only shown in Explorer.
   const insideDownloads = async target => {
     const base = path.resolve(service.downloadDirectory), full = path.resolve(String(target || ''));
-    if (!full.startsWith(base + path.sep)) throw new Error('Lokasi file tidak diizinkan.');
-    await fs.access(full).catch(() => { throw new Error('File tidak ditemukan. Mungkin sudah dipindahkan atau dihapus.'); });
+    if (!full.startsWith(base + path.sep)) throw new Error(tr('err.path'));
+    await fs.access(full).catch(() => { throw new Error(tr('err.notFound')); });
     return full;
   };
   const runnable = /\.(exe|msi|msix|appx|bat|cmd|com|scr|pif|ps1|psm1|vbs|vbe|js|jse|wsf|wsh|hta|lnk|reg|jar|cpl|dll|url|sh|bash|run|appimage|deb|rpm|dmg|pkg|app|command|desktop|bin)$/i;
   ipcMain.handle('zivar:open-file', async (event, target) => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     const full = await insideDownloads(target);
     if (runnable.test(full)) { shell.showItemInFolder(full); return 'shown'; }
     const error = await shell.openPath(full); if (error) throw new Error(error); return 'opened';
   });
   ipcMain.handle('zivar:show-file', async (event, target) => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     shell.showItemInFolder(await insideDownloads(target)); return true;
   });
   ipcMain.handle('zivar:get-system', event => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     return { autoStart: process.env.ZIVAR_DESKTOP_TEST_MODE === '1' ? false : getAutoStart(), activeProxy: activeProxy(), portable: Boolean(process.env.PORTABLE_EXECUTABLE_FILE) };
   });
   ipcMain.handle('zivar:set-autostart', (event, enabled) => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     if (process.env.ZIVAR_DESKTOP_TEST_MODE === '1') { record(`autostart:${Boolean(enabled)}`); return Boolean(enabled); }
     return setAutoStart(enabled);
   });
-  ipcMain.handle('zivar:check-update', async event => { if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.'); return checkUpdate(); });
-  ipcMain.handle('zivar:download-update', async event => { if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.'); return downloadUpdate(); });
+  ipcMain.handle('zivar:check-update', async event => { if (!trusted(event)) throw new Error(tr('err.sender')); return checkUpdate(); });
+  ipcMain.handle('zivar:download-update', async event => { if (!trusted(event)) throw new Error(tr('err.sender')); return downloadUpdate(); });
+  ipcMain.handle('zivar:install-update', async event => { if (!trusted(event)) throw new Error(tr('err.sender')); return installUpdate(); });
+  ipcMain.handle('zivar:update-state', event => { if (!trusted(event)) throw new Error(tr('err.sender')); return updateSnapshot(); });
+  ipcMain.handle('zivar:open-external', async (event, target) => {
+    if (!trusted(event)) throw new Error(tr('err.sender'));
+    let url; try { url = new URL(String(target)); } catch { throw new Error(tr('err.externalBlocked')); }
+    if (url.protocol !== 'https:' || !['zivar.my.id', 'github.com'].includes(url.hostname)) throw new Error(tr('err.externalBlocked'));
+    await shell.openExternal(url.href); return true;
+  });
   ipcMain.handle('zivar:relaunch', event => {
-    if (!trusted(event)) throw new Error('Pengirim tidak diizinkan.');
+    if (!trusted(event)) throw new Error(tr('err.sender'));
     if (process.env.ZIVAR_DESKTOP_TEST_MODE === '1') { record('relaunch'); return false; }
     relaunchWithProxy(savedProxy()); quitting = true; setImmediate(() => app.quit()); return true;
   });
@@ -314,21 +389,21 @@ function createWindow() {
     event.preventDefault(); window.hide();
     if (!shownTrayNotice && process.env.ZIVAR_DESKTOP_TEST_MODE !== '1' && Notification.isSupported()) {
       shownTrayNotice = true;
-      new Notification({ title: 'ZIVAR masih berjalan', body: 'Unduhan berlanjut di latar belakang. Buka ikon ZIVAR di system tray untuk kembali atau keluar.', icon: path.join(directory, 'assets', 'app.png') }).show();
+      new Notification({ title: tr('tray.notice.title'), body: tr('tray.notice.body'), icon: path.join(directory, 'assets', 'app.png') }).show();
     }
   });
-  window.loadURL(service.origin + '/').catch(async error => { await log(error); dialog.showErrorBox('ZIVAR tidak dapat dibuka', error.message); quitting = true; app.quit(); });
+  window.loadURL(service.origin + '/').catch(async error => { await log(error); dialog.showErrorBox(tr('err.openFailed'), error.message); quitting = true; app.quit(); });
 }
 
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(path.join(directory, 'assets', 'app.png')).resize({ width: 24, height: 24 }));
   tray.setToolTip('ZIVAR Download Manager');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Buka ZIVAR', click: showWindow },
-    { label: 'Folder unduhan', click: () => shell.openPath(service.downloadDirectory) },
-    { label: 'Folder ekstensi Chrome', click: () => shell.openPath(extensionDirectory) },
+    { label: tr('tray.open'), click: showWindow },
+    { label: tr('tray.folder'), click: () => shell.openPath(service.downloadDirectory) },
+    { label: tr('tray.extension'), click: () => shell.openPath(extensionDirectory) },
     { type: 'separator' },
-    { label: 'Keluar', click: () => { quitting = true; app.quit(); } },
+    { label: tr('tray.quit'), click: () => { quitting = true; app.quit(); } },
   ]));
   tray.on('double-click', showWindow); tray.on('click', showWindow);
 }
@@ -354,10 +429,12 @@ else {
     await fs.cp(bundledExtensionDirectory, extensionDirectory, { recursive: true, force: true });
     setupPending = process.argv.includes('--show-setup') || !await fs.access(path.join(dataDirectory, 'setup-completed.json')).then(() => true, () => false);
     installBridge(); createWindow(); createTray(); startClipboardMonitor(); watchJobs();
+    service.manager?.on('change', watchUpdate);
     setTimeout(() => backgroundUpdateCheck().catch(log), 60_000).unref?.();
+    setInterval(() => backgroundUpdateCheck().catch(log), 6 * 3600_000).unref?.();
   }).catch(async error => {
     await log(error);
-    dialog.showErrorBox('ZIVAR tidak dapat dimulai', error.code === 'EADDRINUSE' ? 'Port 18765 sedang dipakai aplikasi lain. Tutup aplikasi yang memakai port tersebut, lalu buka ZIVAR kembali.' : error.message);
+    dialog.showErrorBox(tr('err.startFailed'), error.code === 'EADDRINUSE' ? tr('err.portBusy') : error.message);
     quitting = true; app.quit();
   });
 }

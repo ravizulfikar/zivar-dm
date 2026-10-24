@@ -36,8 +36,8 @@ cd .tools/browser-test && node node_modules/playwright-core/cli.js install chrom
 
 Note: on recent Chromium versions Playwright takes over download handling through DevTools, so
 `chrome.downloads.onDeterminingFilename` never fires and the extension cannot intercept the download.
-`scripts/extension-smoke.mjs` may fail at that step on some Chromium versions. If it does, send
-`Browser.setDownloadBehavior` with `behavior: 'default'` over a CDP session before testing interception.
+`scripts/extension-smoke.mjs` sends `Browser.setDownloadBehavior` with `behavior: 'default'` over a CDP session
+first; do the same in any new test that exercises download interception.
 A few smoke tests (`desktop-smoke`, `video-overlay-smoke`) are timing-sensitive and sometimes need a rerun.
 
 ## Bundled helpers
@@ -80,7 +80,11 @@ python scripts/create-app-icon.py "<path to msedge.exe or chrome>"
 places, `extension/background.js` and `app/manager.mjs`; `tests/browser-rules.test.mjs` checks that they match,
 so change both together.
 
+## Languages
+
+The interface is English by default with an Indonesian translation. Text lives in four places that must stay in step: `app/public/i18n.js` (app), `extension/i18n.js` (extension), `desktop/strings.mjs` (tray, notifications, dialogs) and `app/messages.mjs` (engine messages shown to the user). `tests/i18n.test.mjs` fails when a key is missing from either language, when a key in use does not exist, or when an engine message has no English translation.
+
 ## Code style
 
-Follow the surrounding files: ES modules (`.mjs`), no extra runtime dependencies, user-facing messages in
-Indonesian, short comments that explain why.
+Follow the surrounding files: ES modules (`.mjs`), no extra runtime dependencies, user-facing text through the
+dictionaries above (never hard-coded), short comments that explain why.

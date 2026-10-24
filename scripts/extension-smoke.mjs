@@ -44,41 +44,46 @@ try {
   popup = await context.newPage();
   await popup.goto(`chrome-extension://${id}/popup.html`);
   await popup.locator('#token').fill(app.token);
-  await popup.getByRole('button', { name: 'Hubungkan', exact: true }).click();
-  await popup.locator('#status').filter({ hasText: 'Terhubung ke aplikasi lokal' }).waitFor();
+  await popup.getByRole('button', { name: 'Connect', exact: true }).click();
+  await popup.locator('#status').filter({ hasText: 'Connected to the local app' }).waitFor();
   const integration = await fetch(app.origin + '/api/state', { headers: { Authorization: `Bearer ${app.token}` } }).then(response => response.json());
   assert.equal(integration.browserIntegration.connected, true);
   const demo = await context.newPage();
   await demo.goto(sourceOrigin + '/page');
   await popup.evaluate(async url => { const tabs = await chrome.tabs.query({}); await chrome.tabs.update(tabs.find(tab => tab.url === url).id, { active: true }); }, sourceOrigin + '/page');
   await popup.locator('#refresh').click();
-  await popup.getByRole('button', { name: 'Unduh dengan ZIVAR' }).waitFor();
-  await popup.getByRole('button', { name: 'Unduh dengan ZIVAR' }).click();
-  await popup.locator('#message').filter({ hasText: 'Video ditambahkan' }).waitFor();
+  await popup.getByRole('button', { name: 'Download with ZIVAR' }).waitFor();
+  await popup.getByRole('button', { name: 'Download with ZIVAR' }).click();
+  await popup.locator('#message').filter({ hasText: 'Video added' }).waitFor();
   await waitFor(() => app.manager.jobs[0]?.status === 'completed');
   assert.deepEqual(await fs.readFile(app.manager.jobs[0].outputPath), payload);
   await popup.screenshot({ path: path.join(project, 'artifacts', 'extension.png') });
   await popup.locator('#capture').check();
+  // Playwright takes over download handling through DevTools, which hides downloads from the extension's
+  // onDeterminingFilename. Restore Chrome's own behaviour so the real interception path is exercised.
+  await (await context.newCDPSession(popup)).send('Browser.setDownloadBehavior', { behavior: 'default' });
   const infoPromise = context.waitForEvent('page');
-  const accepted = demo.waitForEvent('download');
   await demo.goto(sourceOrigin + '/archive.zip').catch(() => {});
-  const browserDownload = await accepted;
   const info = await infoPromise;
   await info.waitForLoadState();
   await info.getByRole('heading', { name: 'archive.zip' }).waitFor();
   assert.equal(await info.locator('#type').textContent(), 'application/zip');
-  await info.getByRole('button', { name: 'Mulai download' }).click();
+  await info.getByRole('button', { name: 'Start download' }).click();
   await waitFor(() => app.manager.jobs.some(job => job.url.endsWith('/archive.zip') && job.status === 'completed'));
   const archiveJob = app.manager.jobs.find(job => job.url.endsWith('/archive.zip'));
   assert.deepEqual(await fs.readFile(archiveJob.outputPath), payload);
-  assert.equal(await browserDownload.path().catch(() => null), null);
   await popup.locator('#capture').uncheck();
   await app.close();
-  const fallbackEvent = demo.waitForEvent('download');
+  // App offline: the extension must let Chrome finish the download itself.
   await demo.goto(sourceOrigin + '/fallback.zip').catch(() => {});
-  const fallback = await fallbackEvent;
-  const fallbackFile = await fallback.path();
-  assert.deepEqual(await fs.readFile(fallbackFile), payload);
+  let fallbackItem;
+  const started = Date.now();
+  while (!fallbackItem) {
+    if (Date.now() - started > 15000) throw new Error('Chrome did not finish the fallback download.');
+    fallbackItem = (await popup.evaluate(() => chrome.downloads.search({ state: 'complete' }))).find(item => item.url.endsWith('/fallback.zip'));
+    if (!fallbackItem) await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  assert.deepEqual(await fs.readFile(fallbackItem.filename), payload);
   console.log('PASS: real MV3 extension loads, pairing works, player/network media is detected, media transfers to app, Chrome handoff succeeds, Chrome resumes when app is offline.');
 } catch (error) {
   if (popup && !popup.isClosed()) {

@@ -38,8 +38,8 @@ try {
   desktop = await launch();
   const page = await desktop.firstWindow();
   const errors = []; page.on('pageerror', error => errors.push(error.message));
-  await page.locator('#edition-label').filter({ hasText: 'Pengelola unduhan desktop' }).waitFor();
-  await page.locator('#connection').filter({ hasText: 'Terhubung lokal' }).waitFor();
+  await page.locator('#edition-label').filter({ hasText: 'Desktop download manager' }).waitFor();
+  await page.locator('#connection').filter({ hasText: 'Connected locally' }).waitFor();
   const info = await page.evaluate(() => window.zivarDesktop.getInfo());
   assert.equal(info.attached, false); assert.equal(info.downloadDirectory, downloads);
   assert.equal(info.showSetup, true);
@@ -73,7 +73,7 @@ try {
   assert.equal(snapshot[0].status, 'paused');
   desktop = await launch();
   const restored = await desktop.firstWindow();
-  await restored.locator('#edition-label').filter({ hasText: 'Pengelola unduhan desktop' }).waitFor();
+  await restored.locator('#edition-label').filter({ hasText: 'Desktop download manager' }).waitFor();
   assert.equal((await restored.evaluate(() => window.zivarDesktop.getInfo())).showSetup, false);
   assert.equal(await restored.locator('#setup-dialog').evaluate(dialog => dialog.open), false);
   await restored.locator('.badge.paused').waitFor();
@@ -81,7 +81,7 @@ try {
   await restored.locator('.badge.completed').waitFor({ timeout: 20000 });
   const saved = JSON.parse(await fs.readFile(path.join(state, 'jobs.json'), 'utf8'));
   assert.deepEqual(await fs.readFile(saved[0].outputPath), payload);
-  await assert.rejects(restored.evaluate(() => window.zivarDesktop.openFile('C:\\Windows\\win.ini')), /tidak diizinkan/, 'Only files inside the download folder may be opened');
+  await assert.rejects(restored.evaluate(() => window.zivarDesktop.openFile('C:\\Windows\\win.ini')), /not allowed/, 'Only files inside the download folder may be opened');
   assert.deepEqual(errors, []);
   console.log('PASS: first-run tutorial, copy buttons, persistent dismissal, manual tutorial reopening, desktop sandbox/IPC, extension resources, tray close, graceful shutdown, persisted pause/resume, exact bytes.');
 } finally {

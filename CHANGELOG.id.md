@@ -4,6 +4,12 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.18.1] - 2026-10-25
+
+### Diperbaiki
+
+- Chrome tidak lagi menampilkan "Cannot create item with duplicate id zivar-download" dari ekstensi. Menu klik kanan sebelumnya dibangun ulang dari beberapa tempat sekaligus (saat dipasang, saat dimulai, dan saat bahasa berganti); kini pembangunan ulang berjalan berurutan.
+
 ## [0.18.0] - 2026-10-25
 
 ### Ditambahkan

@@ -1,6 +1,6 @@
 {
   "name": "zivar-download-manager",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "private": true,
   "zivar": {
     "updateFeed": "https://github.com/ravizulfikar/zivar-dm/releases/latest/download/latest.json"

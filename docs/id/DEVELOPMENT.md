@@ -80,6 +80,10 @@ python scripts/create-app-icon.py "<path ke msedge.exe atau chrome>"
 tempat, `extension/background.js` dan `app/manager.mjs`; `tests/browser-rules.test.mjs` memastikan keduanya sama,
 jadi ubah keduanya sekaligus.
 
+## Layar pembuka
+
+`desktop/splashContent.mjs` (halaman dan aturan kapan tampil) murni dan diuji unit; `desktop/splash.mjs` adalah jendela Electron kecilnya. Halamannya satu dokumen mandiri tanpa script, dan bentuk Z di dalamnya harus tetap sama dengan `docs/assets/logo.svg` (ada tesnya). Tidak tampil pada mode tes, saat dimulai dengan `--hidden`, atau bila dimatikan di Pengaturan. `ZIVAR_SPLASH=1` memaksanya tampil untuk tes, `ZIVAR_SPLASH=0` memaksanya mati, dan `ZIVAR_SPLASH_MIN_MS` mengubah lamanya; `scripts/splash-smoke.mjs` memakai ketiganya.
+
 ## Bahasa
 
 Antarmuka berbahasa Inggris secara bawaan dengan terjemahan Indonesia. Teks berada di empat tempat yang harus selalu seiring: `app/public/i18n.js` (aplikasi), `extension/i18n.js` (ekstensi), `desktop/strings.mjs` (tray, notifikasi, dialog), dan `app/messages.mjs` (pesan mesin yang tampil ke pengguna). `tests/i18n.test.mjs` gagal jika ada kunci yang hilang di salah satu bahasa, kunci yang dipakai tidak ada, atau pesan mesin tanpa terjemahan Inggris.

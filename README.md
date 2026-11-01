@@ -34,16 +34,24 @@
   <img src="docs/assets/screenshot-light.png" alt="ZIVAR in the light theme" width="49%">
 </p>
 
+<p align="center">
+  <img src="docs/assets/screenshot-download-info-dark.png" alt="The download info window, dark" width="32%">
+  <img src="docs/assets/screenshot-download-info-light.png" alt="The download info window, light" width="32%">
+  <img src="docs/assets/screenshot-splash.png" alt="The start-up splash" width="32%">
+</p>
+
 ## Features
 
 **Download engine**
 - Multi-connection downloads with resume; connections per file and simultaneous downloads are configurable.
 - Reorderable queue, queue schedule, speed limiter and HTTP proxy.
+- **Combine networks** (experimental): split one download across several connected networks, such as Wi-Fi plus a phone's USB tethering. Every network is tested first and one that drops out is simply left out. See [docs/NETWORKS.md](docs/NETWORKS.md). Inspired by [Plexo](https://github.com/anmolkapil/plexo).
 - Automatic categories (Video, Audio, Documents, Programs, ...) with per-category subfolders.
 - Refresh an expired download address, verify checksums (SHA-256 and others), and supply an expected checksum when adding a download.
 - Add many URLs at once, including patterns such as `photo[001-120].jpg`, plus a **Site Grabber** that collects files from a page.
 - Clipboard monitor, desktop notifications, and an action to run when all downloads finish (quit, sleep, shut down).
-- Lives in the system tray and can start automatically at login.
+- Lives in the system tray and can start automatically at login (straight to the tray, with no window).
+- An animated start-up splash with the logo, version and https://zivar.my.id; it can be turned off in Settings.
 - A desktop-style interface (menu bar, toolbar, category list and download grid) with light and dark themes, in **English** (default) or **Indonesian** with one click.
 - In-app updates: check, download, verify the checksum and install from the About dialog; updates can also download automatically.
 
@@ -54,7 +62,7 @@
 - DRM-protected video is **not** supported.
 
 **Browser extension (Chrome, Edge, Brave and other Chromium browsers; a Firefox build is available)**
-- An info dialog before a file is handed over to ZIVAR: name, size, type and source address.
+- A download-info window before a file is handed over to ZIVAR: file name and kind, size, type, whether it can be resumed, and the source address (asked from the server when Chrome does not know them yet).
 - File-type and excluded-site lists that you edit from the app.
 - Temporary credentials (cookies, referer) are sent only to the local app and are never stored permanently.
 

@@ -2,6 +2,11 @@
 // Add new strings to BOTH dictionaries (tests/i18n.test.mjs fails when they differ).
 (() => {
   const en = {
+    'set.splash': 'Show the splash screen when ZIVAR starts', 'hint.experimental': 'experimental', 'set.networks': 'Networks', 'set.multiNetwork': 'Combine my networks to download faster', 'set.networkRefresh': 'Refresh',
+    'set.multiNote': "Splits one download across every network you tick, for example Wi-Fi plus a phone's USB tethering. It only helps when each network has its own internet connection: Wi-Fi and Ethernet from the same router share one. ZIVAR tests each network against the server before using it and leaves out any that cannot reach it. It is not used while a proxy is set. On Linux a network may need extra routing before it can be used.",
+    'set.networkLoadFailed': 'Could not read the networks.', 'set.networkNone': 'No network detected.', 'set.networkOne': 'Only one network is connected, so there is nothing to combine yet.',
+    'set.networkCount': '{n} networks can be combined.', 'set.networkProxy': 'A proxy is set, so networks are not combined.',
+    'net.wifi': 'Wi-Fi', 'net.ethernet': 'Ethernet', 'net.mobile': 'Mobile / USB', 'net.other': 'Network', 'net.virtual': 'virtual',
     'menu.scheduler': 'Scheduler…', 'menu.settings': 'Settings…', 'menu.tasks': 'Tasks', 'menu.file': 'File', 'menu.downloads': 'Downloads', 'menu.view': 'View', 'menu.help': 'Help',
     'menu.addUrl': 'Add URL…', 'menu.grabber': 'Site Grabber…', 'menu.openFolder': 'Open download folder', 'menu.language': 'Language',
     'menu.hideSidebar': 'Hide categories', 'menu.showSidebar': 'Show categories', 'menu.extGuide': 'Browser extension guide', 'menu.checkUpdates': 'Check for updates…', 'menu.about': 'About',
@@ -79,6 +84,11 @@
     'setup.folderCopied': 'Folder location copied.', 'setup.folderFailed': 'Could not copy the folder location.', 'setup.folderCopiedWeb': 'Folder location copied. Open it in your file manager.', 'setup.folderManual': 'Copy the folder location shown above.',
   };
   const id = {
+    'set.splash': 'Tampilkan layar pembuka saat ZIVAR dimulai', 'hint.experimental': 'eksperimental', 'set.networks': 'Jaringan', 'set.multiNetwork': 'Gabungkan jaringan saya agar unduhan lebih cepat', 'set.networkRefresh': 'Segarkan',
+    'set.multiNote': 'Membagi satu unduhan ke semua jaringan yang Anda centang, misalnya Wi-Fi ditambah tethering USB dari ponsel. Hanya membantu bila setiap jaringan punya koneksi internet sendiri: Wi-Fi dan Ethernet dari router yang sama berbagi satu koneksi. ZIVAR menguji setiap jaringan ke server sebelum memakainya dan melewati yang tidak dapat menjangkaunya. Tidak dipakai saat proxy diatur. Di Linux, jaringan mungkin butuh pengaturan routing tambahan sebelum bisa dipakai.',
+    'set.networkLoadFailed': 'Tidak dapat membaca jaringan.', 'set.networkNone': 'Tidak ada jaringan terdeteksi.', 'set.networkOne': 'Hanya satu jaringan yang terhubung, jadi belum ada yang dapat digabung.',
+    'set.networkCount': '{n} jaringan dapat digabung.', 'set.networkProxy': 'Proxy diatur, jadi jaringan tidak digabung.',
+    'net.wifi': 'Wi-Fi', 'net.ethernet': 'Ethernet', 'net.mobile': 'Seluler / USB', 'net.other': 'Jaringan', 'net.virtual': 'virtual',
     'menu.scheduler': 'Penjadwal…', 'menu.settings': 'Pengaturan…', 'menu.tasks': 'Tugas', 'menu.file': 'File', 'menu.downloads': 'Unduhan', 'menu.view': 'Tampilan', 'menu.help': 'Bantuan',
     'menu.addUrl': 'Tambah URL…', 'menu.grabber': 'Site Grabber…', 'menu.openFolder': 'Buka folder unduhan', 'menu.language': 'Bahasa',
     'menu.hideSidebar': 'Sembunyikan kategori', 'menu.showSidebar': 'Tampilkan kategori', 'menu.extGuide': 'Panduan ekstensi browser', 'menu.checkUpdates': 'Periksa pembaruan…', 'menu.about': 'Tentang',

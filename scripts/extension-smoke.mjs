@@ -51,7 +51,11 @@ try {
   const demo = await context.newPage();
   await demo.goto(sourceOrigin + '/page');
   await popup.evaluate(async url => { const tabs = await chrome.tabs.query({}); await chrome.tabs.update(tabs.find(tab => tab.url === url).id, { active: true }); }, sourceOrigin + '/page');
-  await popup.locator('#refresh').click();
+  // Media is found by watching the page's network requests, which can land just after the first refresh.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    await popup.locator('#refresh').click();
+    if (await popup.getByRole('button', { name: 'Download with ZIVAR' }).waitFor({ timeout: 4000 }).then(() => true, () => false)) break;
+  }
   await popup.getByRole('button', { name: 'Download with ZIVAR' }).waitFor();
   await popup.getByRole('button', { name: 'Download with ZIVAR' }).click();
   await popup.locator('#message').filter({ hasText: 'Video added' }).waitFor();
@@ -68,6 +72,9 @@ try {
   await info.waitForLoadState();
   await info.getByRole('heading', { name: 'archive.zip' }).waitFor();
   assert.equal(await info.locator('#type').textContent(), 'application/zip');
+  // The window asks the app what the server says, so the size and resume support are filled in.
+  await info.locator('#size').filter({ hasText: /\d+(\.\d)? (KB|MB)/ }).waitFor();
+  await info.locator('#resume').filter({ hasText: 'Supported' }).waitFor();
   await info.getByRole('button', { name: 'Start download' }).click();
   await waitFor(() => app.manager.jobs.some(job => job.url.endsWith('/archive.zip') && job.status === 'completed'));
   const archiveJob = app.manager.jobs.find(job => job.url.endsWith('/archive.zip'));

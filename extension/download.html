@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
   <title>ZIVAR Download Info</title>
   <link rel="stylesheet" href="download.css">
   <script src="i18n.js"></script><script src="download.js" defer></script>
@@ -10,25 +11,42 @@
 <body>
   <main>
     <header class="top">
-      <div class="brand"><span class="tile">Z</span><div><strong>ZIVAR</strong><small>Download Info</small></div></div>
-      <span class="status-label">Browser</span>
+      <div class="brand"><img src="icon-48.png" width="36" height="36" alt=""><div><strong>ZIVAR</strong><small data-i18n="info.title">Download Info</small></div></div>
+      <span class="status-label"></span>
     </header>
 
-    <section class="card" aria-labelledby="title">
-      <p class="eyebrow" data-i18n="info.eyebrow">New download detected</p>
-      <h1 id="title" data-i18n="info.preparing">Preparing file information...</h1>
-      <dl class="details">
-        <div><dt data-i18n="info.size">Size</dt><dd id="size" data-i18n="info.checking">Checking...</dd></div>
-        <div><dt data-i18n="info.type">Type</dt><dd id="type" data-i18n="info.checking">Checking...</dd></div>
-        <div><dt data-i18n="info.source">Source</dt><dd id="source" data-i18n="info.checking">Checking...</dd></div>
-      </dl>
-      <p id="error" class="error" role="alert" hidden></p>
-      <div class="actions">
-        <button id="start" class="primary" type="button" disabled data-i18n="info.start">Start download</button>
-        <button id="browser" class="ghost" type="button" disabled data-i18n="info.browser">Continue in Chrome</button>
+    <section class="card hero" aria-labelledby="title">
+      <div class="file-row">
+        <span id="file-tile" class="file-tile" data-kind="other" aria-hidden="true"></span>
+        <div class="file-main">
+          <p class="eyebrow" data-i18n="info.eyebrow">New download detected</p>
+          <h1 id="title" data-i18n="info.preparing">Preparing file information...</h1>
+          <p id="host" class="host"></p>
+        </div>
       </div>
-      <p class="note" data-i18n="info.note">Start download adds the file to the ZIVAR queue. Chrome will not save it a second time.</p>
+      <dl class="facts">
+        <div class="fact"><dt data-i18n="info.size">Size</dt><dd id="size" data-i18n="info.checking">Checking...</dd></div>
+        <div class="fact"><dt data-i18n="info.type">Type</dt><dd id="type" data-i18n="info.checking">Checking...</dd></div>
+        <div class="fact wide"><dt data-i18n="info.resume">Resume</dt><dd id="resume" data-i18n="info.checking">Checking...</dd></div>
+      </dl>
+      <div class="source"><span data-i18n="info.source">Source</span><code id="source" data-i18n="info.checking">Checking...</code></div>
     </section>
+
+    <section id="networks" class="card nets" hidden>
+      <label class="switch-row">
+        <input id="use-networks" type="checkbox">
+        <span class="track"><span class="thumb"></span></span>
+        <span class="switch-text"><b data-i18n="info.networksTitle">Use all my networks</b><small id="networks-note"></small></span>
+      </label>
+      <ul id="network-list" class="net-list"></ul>
+    </section>
+
+    <p id="error" class="error" role="alert" hidden></p>
+    <div class="actions">
+      <button id="start" class="primary" type="button" disabled data-i18n="info.start">Start download</button>
+      <button id="browser" class="ghost" type="button" disabled data-i18n="info.browser">Continue in Chrome</button>
+    </div>
+    <p class="note" data-i18n="info.note">Start download adds the file to the ZIVAR queue. Chrome will not save it a second time.</p>
   </main>
 </body>
 </html>

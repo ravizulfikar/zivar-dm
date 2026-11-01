@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { startServer } from '../app/server.mjs';
 import { normalizeProxy } from '../app/manager.mjs';
 import { translator } from './strings.mjs';
+import { openSplash } from './splash.mjs';
+import { shouldShowSplash, splashMinMs } from './splashContent.mjs';
 import { isNewer, installKind, installGroup, pickAsset, safeFilename } from './updater.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +62,11 @@ function savedLanguage() {
   try { return JSON.parse(readFileSync(path.join(dataDirectory, 'settings.json'), 'utf8')).language === 'id' ? 'id' : 'en'; } catch { return 'en'; }
 }
 const tr = translator(() => service?.manager?.settings().language || savedLanguage());
+// The splash is decided before the engine starts, so its setting is read straight from the saved file.
+function savedSplash() {
+  try { return JSON.parse(readFileSync(path.join(dataDirectory, 'settings.json'), 'utf8')).splash !== false; } catch { return true; }
+}
+let splash = null;
 
 async function log(error) {
   try { await fs.mkdir(dataDirectory, { recursive: true }); await fs.appendFile(path.join(dataDirectory, 'desktop.log'), `${new Date().toISOString()} ${error.stack || error}\n`); } catch {}
@@ -383,7 +390,8 @@ function createWindow() {
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   window.webContents.session.setPermissionCheckHandler(() => false);
   // Started by the OS at login with --hidden: stay in the tray.
-  window.once('ready-to-show', () => { if (!startHidden) showWindow(); });
+  // The splash stays up until the window is drawn (and for its minimum time), so the two never overlap.
+  window.once('ready-to-show', async () => { await splash?.dismiss(splashMinMs(process.env)); if (!startHidden) showWindow(); });
   window.on('close', event => {
     if (quitting) return;
     event.preventDefault(); window.hide();
@@ -392,7 +400,7 @@ function createWindow() {
       new Notification({ title: tr('tray.notice.title'), body: tr('tray.notice.body'), icon: path.join(directory, 'assets', 'app.png') }).show();
     }
   });
-  window.loadURL(service.origin + '/').catch(async error => { await log(error); dialog.showErrorBox(tr('err.openFailed'), error.message); quitting = true; app.quit(); });
+  window.loadURL(service.origin + '/').catch(async error => { await log(error); await splash?.dismiss(0); dialog.showErrorBox(tr('err.openFailed'), error.message); quitting = true; app.quit(); });
 }
 
 function createTray() {
@@ -423,6 +431,9 @@ else {
   });
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
+    if (shouldShowSplash(process.env, { hidden: startHidden, automated: process.env.ZIVAR_DESKTOP_TEST_MODE === '1', enabled: savedSplash() })) {
+      splash = openSplash({ icon: path.join(directory, 'assets', 'app.png'), version: app.getVersion(), tagline: tr('splash.tagline'), starting: tr('splash.starting'), website: 'zivar.my.id' });
+    }
     service = await bootService();
     // Portable resources are temporary; Chrome needs a stable extension folder.
     await fs.mkdir(extensionDirectory, { recursive: true });
@@ -433,7 +444,7 @@ else {
     setTimeout(() => backgroundUpdateCheck().catch(log), 60_000).unref?.();
     setInterval(() => backgroundUpdateCheck().catch(log), 6 * 3600_000).unref?.();
   }).catch(async error => {
-    await log(error);
+    await log(error); await splash?.dismiss(0);
     dialog.showErrorBox(tr('err.startFailed'), error.code === 'EADDRINUSE' ? tr('err.portBusy') : error.message);
     quitting = true; app.quit();
   });

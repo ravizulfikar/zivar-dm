@@ -2,6 +2,7 @@
 // The language follows the interface language stored in the app settings.
 const dictionaries = {
   en: {
+    'splash.tagline': 'Fast, local and private downloads', 'splash.starting': 'Starting',
     'tray.open': 'Open ZIVAR', 'tray.folder': 'Download folder', 'tray.extension': 'Browser extension folder', 'tray.quit': 'Quit',
     'tray.notice.title': 'ZIVAR is still running', 'tray.notice.body': 'Downloads continue in the background. Open the ZIVAR tray icon to return or quit.',
     'notify.done': 'Download complete', 'notify.failed': 'Download failed', 'notify.retry': 'Click Resume to try again.',
@@ -18,6 +19,7 @@ const dictionaries = {
     'err.externalBlocked': 'This address cannot be opened.', 'err.updateFailed': 'The update download failed.', 'err.installFailed': 'The update could not be started: {error}',
   },
   id: {
+    'splash.tagline': 'Unduhan cepat, lokal, dan privat', 'splash.starting': 'Memulai',
     'tray.open': 'Buka ZIVAR', 'tray.folder': 'Folder unduhan', 'tray.extension': 'Folder ekstensi browser', 'tray.quit': 'Keluar',
     'tray.notice.title': 'ZIVAR masih berjalan', 'tray.notice.body': 'Unduhan berlanjut di latar belakang. Buka ikon ZIVAR di system tray untuk kembali atau keluar.',
     'notify.done': 'Unduhan selesai', 'notify.failed': 'Unduhan gagal', 'notify.retry': 'Klik Lanjut untuk mencoba lagi.',

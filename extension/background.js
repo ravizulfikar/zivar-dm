@@ -110,7 +110,7 @@ async function capturedDownloadInfo(id) {
 async function openDownloadInfo(id) {
   const url = `${chrome.runtime.getURL('download.html')}?id=${encodeURIComponent(id)}`;
   try {
-    const popup = await chrome.windows.create({ url, type: 'popup', width: 520, height: 650, focused: true });
+    const popup = await chrome.windows.create({ url, type: 'popup', width: 520, height: 560, focused: true });
     return { windowId: popup.id, infoTabId: popup.tabs?.[0]?.id ?? null };
   } catch {
     const tab = await chrome.tabs.create({ url });
@@ -151,14 +151,14 @@ async function capturedCredentials(id, record) {
   if (stored?.headers) return stored.headers;
   return credentialsFor(record.tabId, record.url);
 }
-async function startCapturedDownload(id) {
+async function startCapturedDownload(id, options = {}) {
   const record = await capturedDownloadInfo(id);
   record.action = 'starting'; await savePendingDownload(record);
   try {
     const item = record.detached ? null : await downloadItem(id);
     if (item?.state === 'in_progress') await chrome.downloads.pause(id);
     const headers = await capturedCredentials(id, record);
-    const data = await api('/api/downloads', { url: record.url, filename: record.filename, headers: { ...headers, referer: record.referrer || '' } });
+    const data = await api('/api/downloads', { url: record.url, filename: record.filename, headers: { ...headers, referer: record.referrer || '' }, ...(typeof options.multiNetwork === 'boolean' ? { multiNetwork: options.multiNetwork } : {}) });
     if (!record.detached) await chrome.downloads.cancel(id).catch(() => {});
     await removePendingDownload(id);
     await chrome.storage.local.set({ lastError: '' });
@@ -167,6 +167,12 @@ async function startCapturedDownload(id) {
     record.action = null; await savePendingDownload(record).catch(() => {});
     throw error;
   }
+}
+// The size, type and resume support of a captured link, as the server reports them.
+async function probeCapturedDownload(id) {
+  const record = await capturedDownloadInfo(id);
+  const headers = await capturedCredentials(id, record);
+  return api('/api/inspect', { url: record.url, headers: { ...headers, referer: record.referrer || '' } });
 }
 async function resumeCapturedDownload(id) {
   const record = await pendingDownload(id);
@@ -777,7 +783,15 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     }
     if (message.type === 'DOWNLOAD_INFO_START') {
       if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
-      return { ok: true, data: await startCapturedDownload(downloadId(message.id)) };
+      return { ok: true, data: await startCapturedDownload(downloadId(message.id), { multiNetwork: message.multiNetwork }) };
+    }
+    if (message.type === 'DOWNLOAD_INFO_PROBE') {
+      if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
+      return { ok: true, data: await probeCapturedDownload(downloadId(message.id)) };
+    }
+    if (message.type === 'DOWNLOAD_NETWORKS') {
+      if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));
+      return { ok: true, data: await api('/api/networks') };
     }
     if (message.type === 'DOWNLOAD_INFO_RESUME') {
       if (!isDownloadInfo) throw new Error(ZI.t('bg.sender'));

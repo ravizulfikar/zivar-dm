@@ -4,6 +4,8 @@
 // Add new strings to BOTH dictionaries (tests/i18n.test.mjs fails when they differ).
 (() => {
   const en = {
+    'info.title': 'Download Info', 'info.resume': 'Resume', 'info.resumeYes': 'Supported: can pause and use several connections', 'info.resumeNo': 'Not supported by this server',
+    'info.networksTitle': 'Use all my networks', 'info.networksNote': 'Split this download across {n} connected networks to go faster.',
     'ext.noResponse': 'The extension did not respond.', 'ext.reloaded': 'The extension was updated. Reload the page, then try again.',
     'popup.openAppTitle': 'Open the ZIVAR app', 'popup.openApp': 'Open app', 'popup.checking': 'Checking connection…', 'popup.connected': 'Connected to the local app',
     'popup.connectTitle': 'Connect the local app', 'popup.connectHint': 'Open ZIVAR, click <b>Browser extension → Copy pairing code</b>, then paste it here.',
@@ -39,6 +41,8 @@
     'bg.badToken': 'The pairing code format is invalid.', 'bg.wrongPart': 'The server sent the wrong part of the file.', 'bg.unknown': 'Unrecognised message.',
   };
   const id = {
+    'info.title': 'Info Unduhan', 'info.resume': 'Dapat dilanjutkan', 'info.resumeYes': 'Didukung: bisa dijeda dan memakai beberapa koneksi', 'info.resumeNo': 'Tidak didukung server ini',
+    'info.networksTitle': 'Pakai semua jaringan saya', 'info.networksNote': 'Bagi unduhan ini ke {n} jaringan yang terhubung agar lebih cepat.',
     'ext.noResponse': 'Ekstensi tidak merespons.', 'ext.reloaded': 'Ekstensi diperbarui. Muat ulang halaman, lalu coba kembali.',
     'popup.openAppTitle': 'Buka aplikasi ZIVAR', 'popup.openApp': 'Buka aplikasi', 'popup.checking': 'Memeriksa koneksi…', 'popup.connected': 'Terhubung ke aplikasi lokal',
     'popup.connectTitle': 'Hubungkan aplikasi lokal', 'popup.connectHint': 'Buka ZIVAR, klik <b>Ekstensi browser → Salin kode pairing</b>, lalu tempel di sini.',

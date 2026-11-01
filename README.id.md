@@ -34,16 +34,24 @@
   <img src="docs/assets/screenshot-light.png" alt="ZIVAR dengan tema terang" width="49%">
 </p>
 
+<p align="center">
+  <img src="docs/assets/screenshot-download-info-dark.png" alt="Jendela info unduhan, gelap" width="32%">
+  <img src="docs/assets/screenshot-download-info-light.png" alt="Jendela info unduhan, terang" width="32%">
+  <img src="docs/assets/screenshot-splash.png" alt="Layar pembuka" width="32%">
+</p>
+
 ## Fitur
 
 **Mesin unduhan**
 - Unduhan multi-koneksi dengan resume; jumlah koneksi per file dan unduhan bersamaan dapat diatur.
 - Antrean yang bisa diurutkan ulang, jadwal antrean, pembatas kecepatan, dan proxy HTTP.
+- **Gabungkan jaringan** (eksperimental): membagi satu unduhan ke beberapa jaringan yang terhubung, misalnya Wi-Fi ditambah tethering USB dari ponsel. Setiap jaringan diuji lebih dulu dan yang putus di tengah jalan dilewati begitu saja. Lihat [docs/id/NETWORKS.md](docs/id/NETWORKS.md). Terinspirasi oleh [Plexo](https://github.com/anmolkapil/plexo).
 - Kategori otomatis (Video, Audio, Dokumen, Program, ...) dengan subfolder per kategori.
 - Perbarui alamat unduhan yang kedaluwarsa, verifikasi checksum (SHA-256 dan lainnya), dan checksum yang diharapkan saat menambah unduhan.
 - Tambah banyak URL sekaligus, termasuk pola seperti `foto[001-120].jpg`, plus **Site Grabber** untuk mengambil file dari sebuah halaman.
 - Pantau clipboard, notifikasi desktop, dan aksi setelah semua unduhan selesai (keluar, tidur, matikan komputer).
-- Jalan di system tray dan dapat dimulai otomatis saat login.
+- Jalan di system tray dan dapat dimulai otomatis saat login (langsung ke tray, tanpa jendela).
+- Layar pembuka beranimasi dengan logo, versi, dan https://zivar.my.id; dapat dimatikan di Pengaturan.
 - Antarmuka bergaya aplikasi desktop (menu bar, toolbar, daftar kategori, dan tabel unduhan) dengan tema terang dan gelap, dalam bahasa **Inggris** (bawaan) atau **Indonesia** dengan satu klik.
 - Pembaruan di dalam aplikasi: periksa, unduh, verifikasi checksum, dan pasang dari dialog Tentang; pembaruan juga bisa diunduh otomatis.
 
@@ -54,7 +62,7 @@
 - Video yang dilindungi DRM **tidak** didukung.
 
 **Ekstensi browser (Chrome, Edge, Brave, dan browser Chromium lain; build Firefox tersedia)**
-- Dialog info sebelum file dipindahkan ke ZIVAR: nama, ukuran, tipe, dan alamat sumber.
+- Jendela info unduhan sebelum file dipindahkan ke ZIVAR: nama dan jenis file, ukuran, tipe, apakah bisa dilanjutkan, dan alamat sumber (ditanyakan ke server bila Chrome belum mengetahuinya).
 - Daftar tipe file dan daftar situs pengecualian yang dapat diatur dari aplikasi.
 - Kredensial sementara (cookie, referer) hanya dikirim ke aplikasi lokal dan tidak disimpan permanen.
 

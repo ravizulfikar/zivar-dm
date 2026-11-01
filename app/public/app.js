@@ -58,7 +58,8 @@ function view(job, queueIndex) {
   const label = job.status === 'downloading' && (job.total || (media && job.mediaDuration)) ? `${percent.toLocaleString(locale(), { maximumFractionDigits: 1 })}%` : statusText(job.status);
   const left = job.status === 'downloading' && !media && job.speed > 0 && job.total > job.received ? duration((job.total - job.received) / job.speed) : '';
   let host = ''; try { host = new URL(job.url).hostname; } catch {}
-  const description = job.error || (job.kind === 'browser' ? t('job.viaChrome', { host }) : job.kind === 'youtube' ? `${host} · YouTube` : media ? `${job.manifestType || 'Stream'} ${job.mediaWidth && job.mediaHeight ? `${job.mediaWidth}x${job.mediaHeight}` : ''}`.trim() : host);
+  const live = (job.networks || []).filter(network => network.state === 'active');
+  const description = job.error || (job.status === 'downloading' && live.length > 1 ? live.map(network => `${network.name} ${bytes(network.speed)}/s`).join(' · ') : job.kind === 'browser' ? t('job.viaChrome', { host }) : job.kind === 'youtube' ? `${host} · YouTube` : media ? `${job.manifestType || 'Stream'} ${job.mediaWidth && job.mediaHeight ? `${job.mediaWidth}x${job.mediaHeight}` : ''}`.trim() : host);
   const tooltip = [description, job.outputPath].filter(Boolean).join('\n');
   const primary = job.status === 'completed' ? 'open' : PAUSABLE.includes(job.status) ? 'pause' : RESUMABLE.includes(job.status) ? 'resume' : null;
   return { tooltip, name: job.filename, category: CATEGORY_ICONS.includes(job.category) ? job.category : 'other', q: job.status === 'queued' ? String(queueIndex) : '', size, status: job.status, label, percent, running, left, rate: job.status === 'downloading' && job.speed > 0 ? `${bytes(job.speed)}/s` : '', last: when(job.completedAt || job.createdAt), description, error: Boolean(job.error), primary, completed: job.status === 'completed', lang: getLang() };
@@ -344,7 +345,7 @@ function applyLanguage() {
   $('#edition-label').textContent = t(desktop ? 'status.desktop' : 'status.web');
   applyViewLabels();
   resetYoutube(youtubeFormats); updateYoutubeBox(); updateBatchPreview();
-  fillExtractorText();
+  fillExtractorText(); if ($('#settings-dialog').open) renderNetworks();
   for (const row of rows.values()) row.signature = '';
   if (updateInfo) renderUpdate(); else renderUpdateIdle();
   if (state) render();
@@ -554,7 +555,8 @@ function fillSettings() {
   $('#browser-download-types').value = Array.isArray(settings.browserDownloadTypes) ? settings.browserDownloadTypes.join(', ') : '';
   $('#browser-download-site-exclusions').value = Array.isArray(settings.browserDownloadSiteExclusions) ? settings.browserDownloadSiteExclusions.join('\n') : '';
   $('#schedule-enabled').checked = Boolean(settings.schedule?.enabled); $('#schedule-start').value = localDateValue(settings.schedule?.startAt); $('#schedule-end').value = localDateValue(settings.schedule?.endAt);
-  $('#auto-start').checked = Boolean(system.autoStart);
+  $('#auto-start').checked = Boolean(system.autoStart); $('#show-splash').checked = settings.splash !== false;
+  $('#multi-network').checked = Boolean(settings.multiNetwork); loadNetworks();
   $('#proxy-note').textContent = system.activeProxy ? t('set.proxyActive', { proxy: system.activeProxy.replace(/\/\/[^@]*@/, '//•••@') }) : t('set.proxyNote');
   loadExtractor();
 }
@@ -564,6 +566,34 @@ function fillExtractorText() {
   $('#extractor-status').textContent = `${t('set.extractor', { v: info.version || '—' })}${info.lastResult ? ` · ${info.lastResult}` : ''}${info.checking ? ` · ${t('set.checking')}` : ''}`;
   $('#about-extractor').textContent = `yt-dlp ${info.version || '—'}`;
 }
+// ---------- networks ----------
+let networkInfo = null;
+const KIND_KEYS = { wifi: 'net.wifi', ethernet: 'net.ethernet', mobile: 'net.mobile', other: 'net.other' };
+function renderNetworks() {
+  const list = $('#network-list'); list.replaceChildren();
+  const info = networkInfo;
+  if (!info) { $('#network-status').textContent = t('set.networkLoadFailed'); return; }
+  for (const network of info.networks) {
+    const row = node('label', 'net-row'), box = document.createElement('input');
+    box.type = 'checkbox'; box.dataset.network = network.id; box.checked = info.usable.includes(network.id);
+    const name = node('span', 'net-name', network.name), meta = node('span', 'net-meta', `${network.address} · ${t(KIND_KEYS[network.kind] || 'net.other')}`);
+    row.append(box, name, meta); if (network.virtual) row.append(node('span', 'chip', t('net.virtual')));
+    list.append(row);
+  }
+  const real = info.networks.filter(network => !network.virtual).length;
+  $('#network-status').textContent = info.proxy ? t('set.networkProxy') : !info.networks.length ? t('set.networkNone') : real < 2 ? t('set.networkOne') : t('set.networkCount', { n: real });
+}
+async function loadNetworks() { try { networkInfo = await api('/api/networks'); } catch { networkInfo = null; } renderNetworks(); }
+// Ticking exactly the networks that are used by default is stored as "automatic", so a network that
+// appears later is picked up without the user having to tick it.
+function networkSelectionPayload() {
+  if (!networkInfo) return {};
+  const chosen = $$('#network-list [data-network]').filter(box => box.checked).map(box => box.dataset.network);
+  const automatic = networkInfo.networks.filter(network => !network.virtual).map(network => network.id);
+  const same = chosen.length === automatic.length && chosen.every(id => automatic.includes(id));
+  return { networkSelection: same ? null : chosen };
+}
+$('#network-refresh').addEventListener('click', loadNetworks);
 async function loadExtractor() { try { extractorInfo = await api('/api/extractor'); fillExtractorText(); } catch {} }
 $('#update-extractor').addEventListener('click', async () => {
   const button = $('#update-extractor'); button.disabled = true; $('#extractor-status').textContent = t('set.extractorUpdating');
@@ -582,6 +612,7 @@ $('#settings-form').addEventListener('submit', async event => {
       notifications: $('#notifications').checked, afterAll: $('#after-all').value, proxy: $('#proxy').value.trim(), autoUpdateExtractor: $('#auto-update-extractor').checked,
       browserDownloadTypes: $('#browser-download-types').value,
       browserDownloadSiteExclusions: $('#browser-download-site-exclusions').value,
+      splash: $('#show-splash').checked, multiNetwork: $('#multi-network').checked, ...networkSelectionPayload(),
       schedule: { enabled: $('#schedule-enabled').checked, startAt: isoDateValue($('#schedule-start').value), endAt: isoDateValue($('#schedule-end').value) },
     }) });
     if (desktop && $('#auto-start').checked !== Boolean(system.autoStart)) system.autoStart = await desktop.setAutoStart($('#auto-start').checked);

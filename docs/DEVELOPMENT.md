@@ -80,6 +80,10 @@ python scripts/create-app-icon.py "<path to msedge.exe or chrome>"
 places, `extension/background.js` and `app/manager.mjs`; `tests/browser-rules.test.mjs` checks that they match,
 so change both together.
 
+## Start-up splash
+
+`desktop/splashContent.mjs` (the page and the rules for when it shows) is pure and unit-tested; `desktop/splash.mjs` is the small Electron window. The page is one self-contained document with no script, and the Z in it must stay the same shape as `docs/assets/logo.svg` (a test checks). It does not show in test mode, when started with `--hidden`, or when turned off in Settings. `ZIVAR_SPLASH=1` forces it on for a test, `ZIVAR_SPLASH=0` forces it off, and `ZIVAR_SPLASH_MIN_MS` changes how long it stays; `scripts/splash-smoke.mjs` uses all three.
+
 ## Languages
 
 The interface is English by default with an Indonesian translation. Text lives in four places that must stay in step: `app/public/i18n.js` (app), `extension/i18n.js` (extension), `desktop/strings.mjs` (tray, notifications, dialogs) and `app/messages.mjs` (engine messages shown to the user). `tests/i18n.test.mjs` fails when a key is missing from either language, when a key in use does not exist, or when an engine message has no English translation.

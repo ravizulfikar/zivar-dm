@@ -301,6 +301,12 @@
         <textarea id="browser-download-site-exclusions" rows="3" spellcheck="false" placeholder="*.example.com"></textarea>
         <p class="support-note" data-i18n-html="set.exclNote">One host per line or comma. <code>*.example.com</code> excludes that domain and its subdomains, and always wins over the extension list.</p>
       </fieldset>
+      <fieldset class="settings-wide" id="network-box"><legend data-i18n="set.networks">Networks</legend>
+        <label class="check-row"><input id="multi-network" type="checkbox"> <span data-i18n="set.multiNetwork">Combine my networks to download faster</span> <span class="hint" data-i18n="hint.experimental">experimental</span></label>
+        <div id="network-list" class="network-list" role="group" data-i18n-aria="set.networks" aria-label="Networks"></div>
+        <div class="inline"><span id="network-status" class="support-note grow"></span><button type="button" id="network-refresh" data-i18n="set.networkRefresh">Refresh</button></div>
+        <p class="support-note" data-i18n="set.multiNote">Splits one download across every network you tick, for example Wi-Fi plus a phone's USB tethering. It only helps when each network has its own internet connection: Wi-Fi and Ethernet from the same router share one. ZIVAR tests each network against the server before using it and leaves out any that cannot reach it. It is not used while a proxy is set. On Linux a network may need extra routing before it can be used.</p>
+      </fieldset>
       <fieldset id="schedule-box"><legend data-i18n="set.schedule">Scheduler</legend>
         <label class="check-row"><input id="schedule-enabled" type="checkbox"> <span data-i18n="set.scheduleOn">Enable the queue schedule</span></label>
         <div class="form-grid"><label><span data-i18n="set.startAt">Start at</span><input id="schedule-start" type="datetime-local"></label><label><span data-i18n="set.endAt">Stop at</span><input id="schedule-end" type="datetime-local"></label></div>
@@ -312,6 +318,7 @@
       </fieldset>
       <fieldset class="desktop-only"><legend data-i18n="set.system">System</legend>
         <label class="check-row"><input id="auto-start" type="checkbox"> <span data-i18n="set.autostart">Start ZIVAR when the computer starts (straight to the tray)</span></label>
+        <label class="check-row"><input id="show-splash" type="checkbox"> <span data-i18n="set.splash">Show the splash screen when ZIVAR starts</span></label>
         <label class="check-row"><input id="auto-update-extractor" type="checkbox"> <span data-i18n="set.extractorWeekly">Check for YouTube extractor updates every week</span></label>
         <div class="inline"><span id="extractor-status" class="support-note grow"></span><button type="button" id="update-extractor" data-i18n="set.updateNow">Update now</button></div>
       </fieldset>

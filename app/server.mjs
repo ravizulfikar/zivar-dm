@@ -120,6 +120,8 @@ export async function startServer({ port = 18765, dataDirectory = path.join(proj
         if (req.method === 'POST' && url.pathname === '/api/extractor/update') return json(res, 200, { ...await runExtractorUpdate(), lastResult: tr(extractor.lastResult), available: extractorUpdates });
         if (req.method === 'POST' && url.pathname === '/api/media') return json(res, 201, await manager.addMedia(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/grabber') return json(res, 200, await manager.grabSite(await body(req)));
+        if (req.method === 'GET' && url.pathname === '/api/networks') return json(res, 200, manager.networkInfo());
+        if (req.method === 'POST' && url.pathname === '/api/inspect') return json(res, 200, await manager.inspect(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/probe') return json(res, 200, await manager.probeAccess(await body(req)));
         if (req.method === 'POST' && url.pathname === '/api/browser-jobs') return json(res, 201, await manager.addBrowser(await body(req)));
         const browser = /^\/api\/browser-jobs\/([a-f0-9-]{36})(?:\/(chunk|finish|fail))?$/.exec(url.pathname);

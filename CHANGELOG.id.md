@@ -4,6 +4,25 @@
 
 Semua perubahan penting pada ZIVAR Download Manager dicatat di file ini.
 
+## [0.20.0] - 2026-11-01
+
+### Ditambahkan
+
+- **Gabungkan jaringan** (eksperimental, nonaktif secara bawaan): satu unduhan dapat dibagi ke beberapa jaringan yang terhubung, misalnya Wi-Fi ditambah tethering USB dari ponsel. Setiap koneksi diikat ke satu adapter jaringan dan file dipotong menjadi potongan kecil yang diambil bergantian oleh semua jaringan, sehingga jaringan yang cepat membawa lebih banyak. Terinspirasi oleh [Plexo](https://github.com/anmolkapil/plexo); lihat `docs/id/NETWORKS.md`.
+- Setiap jaringan diuji ke server sebenarnya sebelum dipakai, dan jaringan yang putus di tengah unduhan menyerahkan potongannya ke jaringan lain alih-alih menghentikan unduhan.
+- Pengaturan → Jaringan mendaftar adapter yang terhubung (adapter virtual ditandai dan tidak dicentang); kolom Keterangan menampilkan kecepatan tiap jaringan selama unduhan gabungan berjalan.
+- Jendela unduhan di ekstensi browser menampilkan **Pakai semua jaringan saya** saat dua jaringan atau lebih terhubung, hanya untuk unduhan itu.
+- Layar pembuka beranimasi saat aplikasi dimulai: huruf Z pada logo menggambar dirinya, sebuah paket mengalir di sepanjang panah dan mendarat dengan riak, lalu versi dan https://zivar.my.id muncul. Tampil sekitar dua detik, memudar saat jendela utama siap, tidak pernah muncul saat ZIVAR dimulai langsung ke tray (mulai saat login), dan dapat dimatikan di Pengaturan → Sistem (atau dengan `ZIVAR_SPLASH=0`).
+- Jendela info unduhan bertanya ke aplikasi apa kata server tentang tautan itu, sehingga ukuran, tipe, dan dukungan resume terisi walau Chrome belum mengetahuinya (misalnya tautan rilis GitHub yang sebelumnya menampilkan "Unknown").
+
+### Diubah
+
+- Jendela info unduhan didesain ulang: logo ZIVAR, ubin berwarna sesuai jenis file, host di bawah nama file, kartu ukuran, tipe, dan dukungan resume, tombol mulai bergradasi, tema gelap dan terang mengikuti sistem, dan ukuran jendela menyesuaikan isi.
+
+### Diperbaiki
+
+- Smoke test ekstensi tidak lagi sesekali gagal ketika popup menampilkan media sedikit terlambat.
+
 ## [0.19.0] - 2026-10-25
 
 ### Diubah

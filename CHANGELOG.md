@@ -4,6 +4,25 @@
 
 All notable changes to ZIVAR Download Manager are recorded in this file.
 
+## [0.20.0] - 2026-11-01
+
+### Added
+
+- **Combine networks** (experimental, off by default): one download can be split across several connected networks, such as Wi-Fi plus a phone's USB tethering. Each connection is bound to one network adapter and the file is cut into small chunks that every network takes in turn, so a fast network carries more. Inspired by [Plexo](https://github.com/anmolkapil/plexo); see `docs/NETWORKS.md`.
+- Every network is tested against the real server before a download uses it, and a network that drops out mid-download hands its chunks to the others instead of stopping the download.
+- Settings → Networks lists the connected adapters (virtual ones are marked and not ticked); the Description column shows each network's speed while a combined download runs.
+- The browser extension's download window shows **Use all my networks** when two or more networks are connected, for that download only.
+- An animated start-up splash screen: the Z of the logo draws itself, a packet flows down the arrow and lands with a ripple, and the version and https://zivar.my.id appear. It stays for about two seconds, fades out as the main window is ready, never shows when ZIVAR starts into the tray (start at login), and can be turned off in Settings → System (or with `ZIVAR_SPLASH=0`).
+- The download-info window asks the app what the server says about the link, so the size, type and resume support are filled in even when Chrome does not know them (for example GitHub release links, which showed "Unknown" before).
+
+### Changed
+
+- The download-info window is redesigned: the ZIVAR logo, a tile in the colour of the file's kind, the host under the file name, cards for size, type and resume support, a gradient start button, dark and light themes that follow the system, and a window that is sized to its content.
+
+### Fixed
+
+- The extension smoke test no longer fails now and then when the popup lists media a moment late.
+
 ## [0.19.0] - 2026-10-25
 
 ### Changed

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { muxMedia, muxFiles } from './media.mjs';
 import { youtubeUrl, downloadYoutube, youtubeOutputExtension, youtubeIsAudio } from './youtube.mjs';
+import { listNetworks, selectNetworks, normalizeNetworkSelection, isNetworkFailure, requestVia } from './network.mjs';
 
 const TERMINAL = new Set(['completed', 'cancelled']);
 export const CATEGORIES = ['video', 'audio', 'image', 'document', 'archive', 'program', 'other'];
@@ -104,18 +105,27 @@ function filenameFrom(headers, url) {
 const number = value => /^\d+$/.test(value || '') && Number.isSafeInteger(Number(value)) ? Number(value) : null;
 const isStream = type => /mpegurl|dash\+xml|vnd\.mpeg\.dash/.test(type);
 
+// Only these request headers are accepted from the browser extension or a caller.
+function pickCredentials(headers = {}) {
+  const permitted = {};
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (['cookie', 'referer', 'user-agent', 'authorization', 'origin'].includes(key.toLowerCase()) && typeof value === 'string' && !/[\r\n]/.test(value)) permitted[key.toLowerCase()] = value;
+  }
+  return permitted;
+}
+
 // Follow redirects explicitly so session credentials never move to a different origin.
-async function request(url, initialHeaders, signal) {
+async function request(url, initialHeaders, signal, network = null) {
   let current = httpUrl(url), headers = { ...initialHeaders, 'accept-encoding': 'identity' };
   const timeout = new AbortController();
   const combined = AbortSignal.any([signal, timeout.signal]);
   let timer;
-  const touch = () => { clearTimeout(timer); timer = setTimeout(() => timeout.abort(new Error('Server tidak mengirim data selama 45 detik.')), 45_000); timer.unref?.(); };
+  const touch = () => { clearTimeout(timer); timer = setTimeout(() => timeout.abort(Object.assign(new Error('Server tidak mengirim data selama 45 detik.'), { network: true })), 45_000); timer.unref?.(); };
   const dispose = () => clearTimeout(timer);
   try {
     for (let redirect = 0; redirect <= 8; redirect++) {
       touch();
-      const response = await fetch(current, { headers, signal: combined, redirect: 'manual' });
+      const response = network ? await requestVia(network, current, { headers, signal: combined }) : await fetch(current, { headers, signal: combined, redirect: 'manual' });
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get('location');
         await response.body?.cancel();
@@ -136,8 +146,9 @@ async function request(url, initialHeaders, signal) {
 }
 
 export class DownloadManager extends EventEmitter {
-  constructor({ dataDirectory, downloadDirectory, concurrency = 3, connections = 4 }) {
+  constructor({ dataDirectory, downloadDirectory, concurrency = 3, connections = 4, networkProvider = listNetworks, networkCheckTimeout = 8000 }) {
     super();
+    this.networkProvider = networkProvider; this.networkCheckTimeout = networkCheckTimeout;
     this.dataDirectory = dataDirectory;
     this.downloadDirectory = downloadDirectory;
     this.concurrency = concurrency;
@@ -194,6 +205,9 @@ export class DownloadManager extends EventEmitter {
       proxy: normalizeProxy(value.proxy),
       autoUpdateExtractor: value.autoUpdateExtractor === undefined ? true : Boolean(value.autoUpdateExtractor),
       autoUpdate: value.autoUpdate === undefined ? true : Boolean(value.autoUpdate),
+      splash: value.splash === undefined ? true : Boolean(value.splash),
+      multiNetwork: Boolean(value.multiNetwork),
+      networkSelection: normalizeNetworkSelection(value.networkSelection),
       language: ['en', 'id'].includes(value.language) ? value.language : 'en',
       browserDownloadTypes: normalizeBrowserDownloadTypes(value.browserDownloadTypes),
       browserDownloadSiteExclusions: normalizeBrowserDownloadSiteExclusions(value.browserDownloadSiteExclusions),
@@ -247,7 +261,7 @@ export class DownloadManager extends EventEmitter {
     }
   }
   async persist() {
-    const snapshot = JSON.stringify(this.jobs.map(({ speed, ...job }) => job), null, 2);
+    const snapshot = JSON.stringify(this.jobs.map(({ speed, networks, ...job }) => job), null, 2);
     const destination = path.join(this.dataDirectory, 'jobs.json');
     const write = this.saveChain.then(async () => {
       await fs.writeFile(destination + '.tmp', snapshot);
@@ -262,7 +276,7 @@ export class DownloadManager extends EventEmitter {
       this.saveTimer = null; this.persist().catch(() => {});
     }, 1000);
   }
-  async add({ url, filename, headers = {}, category = null, youtubeFormat = null, youtubeSubtitles = false, expectedSha256 = null }) {
+  async add({ url, filename, headers = {}, category = null, youtubeFormat = null, youtubeSubtitles = false, expectedSha256 = null, multiNetwork = undefined }) {
     if (expectedSha256 !== null && !/^[a-f0-9]{64}$/i.test(String(expectedSha256))) throw new Error('Checksum SHA-256 tidak valid.');
     if (this.closing) throw new Error('Aplikasi sedang berhenti.');
     url = httpUrl(url);
@@ -287,12 +301,10 @@ export class DownloadManager extends EventEmitter {
       received: 0, total: null, speed: 0, parts: [], error: null, etag: null,
       lastModified: null, supportsRanges: false, connectionCount: 1,
       ...(expectedSha256 && !youtube ? { expectedSha256: String(expectedSha256).toLowerCase() } : {}),
+      ...(typeof multiNetwork === 'boolean' && !youtube ? { multiNetwork } : {}),
     };
     // Secrets remain in memory; they are deliberately excluded from jobs.json.
-    const permitted = {};
-    for (const [key, value] of Object.entries(headers)) {
-      if (['cookie', 'referer', 'user-agent', 'authorization', 'origin'].includes(key.toLowerCase()) && typeof value === 'string' && !/[\r\n]/.test(value)) permitted[key.toLowerCase()] = value;
-    }
+    const permitted = pickCredentials(headers);
     if (youtube) {
       const ext = youtubeOutputExtension(youtubeFormat);
       const base = safeFilename(filename || `YouTube-${new URL(url).searchParams.get("v")}`).replace(/\.(mp4|m4a|mp3|webm|mkv)$/i, '');
@@ -560,6 +572,63 @@ export class DownloadManager extends EventEmitter {
       };
     } finally { await req.response.body?.cancel().catch(() => {}); req.dispose(); }
   }
+  proxyActive() { return Boolean(this.settingsState.proxy || ['ZIVAR_PROXY', 'HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy'].some(name => process.env[name])); }
+  networkInfo() {
+    const networks = this.networkProvider();
+    return { networks, usable: selectNetworks(networks, this.settingsState.networkSelection).map(network => network.id), enabled: this.settingsState.multiNetwork, proxy: this.proxyActive() };
+  }
+  // The networks this download can really use: every candidate is tested against the actual server, so
+  // an adapter that cannot reach it (a VPN, an isolated or misrouted network) is left out instead of
+  // stalling the download.
+  async verifiedNetworks(job, metadata, validator, signal) {
+    delete job.networks; delete job.networkNote;
+    if (!(job.multiNetwork ?? this.settingsState.multiNetwork)) return [];
+    const reason = this.proxyActive() ? 'proxy' : !metadata.supportsRanges || !validator ? 'no-ranges' : metadata.total < 4 * 1024 * 1024 ? 'too-small' : null;
+    if (reason) { job.networkNote = reason; return []; }
+    const candidates = selectNetworks(this.networkProvider(), this.settingsState.networkSelection);
+    if (candidates.length < 2) { job.networkNote = 'one-network'; return []; }
+    const results = await Promise.all(candidates.map(async network => {
+      let req;
+      try {
+        req = await request(job.url, { ...this.credentials.get(job.id), range: 'bytes=0-0' }, AbortSignal.any([signal, AbortSignal.timeout(this.networkCheckTimeout)]), network);
+        return { network, ok: [200, 206].includes(req.response.status), error: [200, 206].includes(req.response.status) ? null : `HTTP ${req.response.status}` };
+      } catch (error) { return { network, ok: false, error: error.code || error.message }; }
+      finally { if (req) { await req.response.body?.cancel().catch(() => {}); req.dispose(); } }
+    }));
+    signal.throwIfAborted();
+    const usable = results.filter(result => result.ok).map(result => result.network);
+    job.networks = results.map(({ network, ok, error }) => ({ id: network.id, name: network.name, address: network.address, state: ok ? 'active' : 'unavailable', error, received: 0, speed: 0 }));
+    if (usable.length < 2) { job.networkNote = 'one-network'; return []; }
+    return usable;
+  }
+  // Chunks are taken from one queue by every connection of every network, so a fast network simply
+  // takes more of them. A network that drops out hands its chunk back; the download carries on without it.
+  networkWorkers(job, networks, signal, group) {
+    const pending = job.parts.map((part, index) => index).filter(index => { const part = job.parts[index]; return part.end === null || part.received < part.end - part.start + 1; });
+    const alive = new Set(networks.map(network => network.id));
+    const stats = new Map(job.networks.map(entry => [entry.id, entry]));
+    let inflight = 0;
+    const worker = async network => {
+      const stat = stats.get(network.id);
+      while (!signal.aborted && alive.has(network.id)) {
+        const index = pending.shift();
+        if (index === undefined) {
+          // Another network may still hand a chunk back, so wait until nothing is in flight.
+          if (!inflight) return;
+          await new Promise(resolve => setTimeout(resolve, 40)); continue;
+        }
+        inflight++;
+        try { await this.transfer(job, job.parts[index], index, signal, network, stat); }
+        catch (error) {
+          if (!signal.aborted && isNetworkFailure(error) && (!alive.has(network.id) || alive.size > 1)) {
+            alive.delete(network.id); stat.state = 'failed'; stat.error = error.code || error.message; stat.speed = 0; pending.unshift(index); return;
+          }
+          group.abort(error); throw error;
+        } finally { inflight--; }
+      }
+    };
+    return networks.flatMap(network => Array.from({ length: this.connections }, () => worker(network)));
+  }
   async run(job, signal) {
     if (job.kind === 'youtube') return this.runYoutube(job, signal);
     if (job.kind === 'media') return this.runMedia(job, signal);
@@ -577,9 +646,12 @@ export class DownloadManager extends EventEmitter {
     Object.assign(job, metadata);
     if (!job.customFilename) job.filename = safeFilename(metadata.suggestedName);
     if (!job.categoryExplicit) job.category = classifyCategory(job.filename, metadata.contentType);
+    const networks = await this.verifiedNetworks(job, metadata, validator, signal);
     if (!job.parts.length) {
-      const count = metadata.supportsRanges && validator && metadata.total >= 2 * 1024 * 1024 ? this.connections : 1;
-      const size = metadata.total === null ? null : Math.ceil(metadata.total / count);
+      let count = metadata.supportsRanges && validator && metadata.total >= 2 * 1024 * 1024 ? this.connections : 1;
+      let size = metadata.total === null ? null : Math.ceil(metadata.total / count);
+      // With several networks the file is cut into many small chunks that the networks take in turn.
+      if (networks.length) { size = Math.max(2 * 1024 * 1024, Math.ceil(metadata.total / 512)); count = Math.ceil(metadata.total / size); }
       job.parts = Array.from({ length: count }, (_, index) => ({ start: size === null ? 0 : size * index, end: size === null ? null : Math.min(metadata.total - 1, size * (index + 1) - 1), received: 0 }));
     }
     // Disk size is authoritative after a crash, never an old progress snapshot.
@@ -589,24 +661,25 @@ export class DownloadManager extends EventEmitter {
         await fs.writeFile(this.partPath(job, index), ''); part.received = 0;
       }
     }
-    job.connectionCount = job.parts.length;
+    job.connectionCount = networks.length ? Math.min(job.parts.length, networks.length * this.connections) : job.parts.length;
     job.received = job.parts.reduce((sum, part) => sum + part.received, 0);
     await this.persist(); this.changed(job);
     let previous = job.received, previousTime = Date.now();
     const progress = setInterval(() => {
       const now = Date.now(); job.speed = Math.max(0, (job.received - previous) * 1000 / (now - previousTime));
+      for (const entry of job.networks || []) { entry.speed = entry.state === 'active' ? Math.max(0, (entry.received - (entry.before || 0)) * 1000 / (now - previousTime)) : 0; entry.before = entry.received; }
       previous = job.received; previousTime = now; this.changed(job);
     }, 500);
     const group = new AbortController();
     const transferSignal = AbortSignal.any([signal, group.signal]);
-    const workers = job.parts.map((part, index) => this.transfer(job, part, index, transferSignal).catch(error => { group.abort(error); throw error; }));
+    const workers = networks.length ? this.networkWorkers(job, networks, transferSignal, group) : job.parts.map((part, index) => this.transfer(job, part, index, transferSignal).catch(error => { group.abort(error); throw error; }));
     try {
       const results = await Promise.allSettled(workers);
       const failure = results.find(result => result.status === 'rejected');
       if (failure) throw group.signal.reason || failure.reason;
       signal.throwIfAborted();
       if (job.total !== null && job.received !== job.total) throw new Error('Ukuran file hasil unduhan tidak sesuai.');
-      job.status = 'assembling'; job.speed = 0; this.changed(job);
+      job.status = 'assembling'; job.speed = 0; for (const entry of job.networks || []) entry.speed = 0; this.changed(job);
       const assembled = path.join(this.dataDirectory, 'parts', `${job.id}.assembled`);
       const output = await fs.open(assembled, 'w');
       try {
@@ -660,10 +733,23 @@ export class DownloadManager extends EventEmitter {
   // Some sites only serve media to a real browser. For those, the Chrome extension
   // downloads the bytes itself and uploads them here in ordered chunks.
   async probeAccess({ url, headers = {} } = {}) {
-    const permitted = {};
-    for (const [key, value] of Object.entries(headers || {})) if (['cookie', 'referer', 'user-agent', 'authorization', 'origin'].includes(key.toLowerCase()) && typeof value === 'string' && !/[\r\n]/.test(value)) permitted[key.toLowerCase()] = value;
+    const permitted = pickCredentials(headers);
     const req = await request(url, { ...permitted, range: 'bytes=0-0' }, AbortSignal.timeout(15_000));
     try { return { status: req.response.status }; } finally { await req.response.body?.cancel().catch(() => {}); req.dispose(); }
+  }
+  // What the server says about a link, for the "download info" window of the browser extension.
+  async inspect({ url, headers = {} } = {}) {
+    const req = await request(url, { ...pickCredentials(headers), range: 'bytes=0-0' }, AbortSignal.timeout(15_000));
+    try {
+      const { response } = req;
+      if (![200, 206].includes(response.status)) return { ok: false, status: response.status };
+      const range = /^bytes 0-0\/(\d+)$/.exec(response.headers.get('content-range') || '');
+      const total = response.status === 206 ? number(range?.[1]) : number(response.headers.get('content-length'));
+      return {
+        ok: true, total, contentType: (response.headers.get('content-type') || '').split(';')[0].trim(), supportsRanges: response.status === 206,
+        filename: filenameFrom(response.headers, req.url), host: new URL(req.url).hostname,
+      };
+    } finally { await req.response.body?.cancel().catch(() => {}); req.dispose(); }
   }
   async addBrowser({ filename, parts, pageUrl = null } = {}) {
     if (this.closing) throw new Error('Aplikasi sedang berhenti.');
@@ -818,13 +904,13 @@ export class DownloadManager extends EventEmitter {
       if (job.status !== 'completed') await fs.rm(assembled, { force: true }).catch(() => {});
     }
   }
-  async transfer(job, part, index, signal) {
+  async transfer(job, part, index, signal, network = null, stat = null) {
     const expected = part.end === null ? null : part.end - part.start + 1;
     if (expected !== null && part.received === expected) return;
     const headers = { ...this.credentials.get(job.id) };
     const ranged = job.supportsRanges && Boolean(job.etag || job.lastModified);
     if (ranged) { headers.range = `bytes=${part.start + part.received}-${part.end ?? ''}`; headers['if-range'] = job.etag || job.lastModified; }
-    const req = await request(job.url, headers, signal);
+    const req = await request(job.url, headers, signal, network);
     let file;
     try {
       const { response } = req;
@@ -841,11 +927,13 @@ export class DownloadManager extends EventEmitter {
       for await (const bytes of response.body) {
         signal.throwIfAborted(); req.touch();
         if (expected !== null && part.received + bytes.length > expected) throw new Error('Server mengirim data melebihi ukuran file.');
-        await file.writeFile(bytes); part.received += bytes.length; job.received += bytes.length;
+        await file.writeFile(bytes); part.received += bytes.length; job.received += bytes.length; if (stat) stat.received += bytes.length;
         await this.throttle(bytes.length, signal, req.touch);
       }
-      if (expected !== null && part.received !== expected) throw new Error('Koneksi terputus sebelum file selesai. Klik Lanjut untuk mencoba lagi.');
-      await file.sync();
+      if (expected !== null && part.received !== expected) throw Object.assign(new Error('Koneksi terputus sebelum file selesai. Klik Lanjut untuk mencoba lagi.'), { network: true });
+      // Many small chunks would each wait for a disk flush (hundreds of milliseconds on some systems),
+      // which stalls every network at once. Chunks are flushed with the finished file instead.
+      if (!stat) await file.sync();
     } finally {
       await file?.close();
       await req.response.body?.cancel().catch(() => {}); req.dispose();
